@@ -2,7 +2,7 @@
 
 // Start: Core React and Next.js Architecture Imports
 import { useState } from "react";
-import { useRouter } from "navigation";
+import { useRouter } from "next/navigation";
 // End: Core React and Next.js Architecture Imports
 
 // Start: Third-Party SDK and Validation Schema Dependency Imports
