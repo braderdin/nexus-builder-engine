@@ -1,50 +1,80 @@
-// Start: Core Next.js and Serverless Dependency Imports
+// Start: Core Next.js Serverless Routing Imports
 import { NextRequest, NextResponse } from "next/server";
-// End: Core Next.js and Serverless Dependency Imports
+// End: Core Next.js Serverless Routing Imports
 
-// Start: Infrastructure Service Dependency Imports
+// Start: Core Infrastructure and AI SDK Dependency Imports
 import { aiRateLimiterGuard } from "@/lib/ai/ratelimit";
-// End: Infrastructure Service Dependency Imports
+import Groq from "groq-sdk";
+// End: Core Infrastructure and AI SDK Dependency Imports
 
-// Start: AI Engine POST Endpoint Route Handler
+// Start: Groq Cloud SDK Client Architecture Initialization
+const groq = new Groq({
+  apiKey: process.env.GROQ_API_KEY || "",
+});
+// End: Groq Cloud SDK Client Architecture Initialization
+
+// Start: AI Engine Live POST Endpoint Route Handler
 export async function POST(request: NextRequest) {
-  // Start: Payload Extraction and Session Identification
-  const { userEmail, userPrompt } = await request.json();
-  
-  // Identifier fallback to IP address if account session email is corrupted
-  const rateLimitIdentifier = userEmail || request.ip || "global_anonymous_node";
-  // End: Payload Extraction and Session Identification
-
-  // Start: Upstash Redis Token Allocation Verification
-  const { success, limit, reset, remaining } = await aiRateLimiterGuard.limit(rateLimitIdentifier);
-  
-  if (!success) {
-    return NextResponse.json(
-      { 
-        error: "Rate Limit Exceeded", 
-        message: "Free tier access restriction triggered. You are allowed 5 prompt interactions per minute." 
-      },
-      { 
-        status: 429,
-        headers: {
-          "X-RateLimit-Limit": limit.toString(),
-          "X-RateLimit-Remaining": remaining.toString(),
-          "X-RateLimit-Reset": reset.toString(),
-        }
-      }
-    );
-  }
-  // End: Upstash Redis Token Allocation Verification
-
-  // Start: Secure Execution Logic Pipeline Placeholders
   try {
-    // Note for BraderDin: This is where we plug our future Groq Cloud / Gemini Studio fetch calls
-    const mockAiResponse = `[Nexus AI Engine Response for node: ${rateLimitIdentifier}] Verified Prompt: "${userPrompt}". Your rate limit remaining credits: ${remaining}/5.`;
+    // Start: Dynamic Payload Extraction
+    const { userEmail, userPrompt } = await request.json();
+    const rateLimitIdentifier = userEmail || request.ip || "global_anonymous_node";
+    // End: Dynamic Payload Extraction
 
-    return NextResponse.json({ responseText: mockAiResponse }, { status: 200 });
+    // Start: Upstash Redis Token Allocation Verification Shield
+    const { success, limit, reset, remaining } = await aiRateLimiterGuard.limit(rateLimitIdentifier);
+    
+    if (!success) {
+      return NextResponse.json(
+        { 
+          error: "Rate Limit Exceeded", 
+          message: "Free tier constraint triggered. You have exceeded the 5 prompt interactions per minute allocation." 
+        },
+        { 
+          status: 429,
+          headers: {
+            "X-RateLimit-Limit": limit.toString(),
+            "X-RateLimit-Remaining": remaining.toString(),
+            "X-RateLimit-Reset": reset.toString(),
+          }
+        }
+      );
+    }
+    // End: Upstash Redis Token Allocation Verification Shield
+
+    // Start: Live Groq API Completion Request Execution
+    const aiChatCompletion = await groq.chat.completions.create({
+      // Utilizing the ultra-low latency Llama3 model optimal for quick chat interfaces
+      model: "llama3-8b-8192", 
+      messages: [
+        {
+          role: "system",
+          content: `You are the Nexus Engine AI Assistant, embedded inside a next-generation SaaS website builder platform. 
+          Your core specialization is to assist Malaysian merchants, small business owners, and learners in generating brilliant website layout ideas, structuring high-converting copywriting, fixing frontend programming bugs, optimizing search engine optimization (SEO), and configuring seamless direct-to-WhatsApp order forms. 
+          Keep your responses highly structural, analytical, professional, concise, and friendly. Answer in the same language the merchant uses to ask.`
+        },
+        {
+          role: "user",
+          content: userPrompt
+        }
+      ],
+      temperature: 0.7,
+      max_tokens: 1024,
+    });
+    // End: Live Groq API Completion Request Execution
+
+    // Start: Safe Response Payload Parsing
+    const processedResponseText = aiChatCompletion.choices[0]?.message?.content || "The AI engine returned an empty completion buffer.";
+    return NextResponse.json({ responseText: processedResponseText }, { status: 200 });
+    // End: Safe Response Payload Parsing
+
   } catch (apiGatewayError: any) {
-    return NextResponse.json({ error: "Internal AI processing failure" }, { status: 500 });
+    // Start: Error Logging and Failure Recovery Response
+    return NextResponse.json(
+      { error: "Internal AI Engine Processing Failure", details: apiGatewayError.message }, 
+      { status: 500 }
+    );
+    // End: Error Logging and Failure Recovery Response
   }
-  // End: Secure Execution Logic Pipeline Placeholders
 }
-// End: AI Engine POST Endpoint Route Handler
+// End: AI Engine Live POST Endpoint Route Handler
