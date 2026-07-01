@@ -70,8 +70,13 @@ export async function POST(request: NextRequest) {
 
   } catch (apiGatewayError: any) {
     // Start: Error Logging and Failure Recovery Response
+    // This will print the exact error message directly into your VS Code terminal
+    console.error("====== NEXUS AI ENGINE CRASH LOG ======");
+    console.error(apiGatewayError);
+    console.error("=======================================");
+
     return NextResponse.json(
-      { error: "Internal AI Engine Processing Failure", details: apiGatewayError.message }, 
+      { error: "Internal AI Engine Processing Failure", message: apiGatewayError.message }, 
       { status: 500 }
     );
     // End: Error Logging and Failure Recovery Response
