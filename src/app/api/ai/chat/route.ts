@@ -44,8 +44,8 @@ export async function POST(request: NextRequest) {
 
     // Start: Live Groq API Completion Request Execution
     const aiChatCompletion = await groq.chat.completions.create({
-      // Utilizing the ultra-low latency Llama3 model optimal for quick chat interfaces
-      model: "llama3-8b-8192", 
+      // Upgraded to supported ultra-low latency Llama 3.1 model optimal for chat sessions
+      model: "llama-3.1-8b-instant", 
       messages: [
         {
           role: "system",
@@ -70,7 +70,6 @@ export async function POST(request: NextRequest) {
 
   } catch (apiGatewayError: any) {
     // Start: Error Logging and Failure Recovery Response
-    // This will print the exact error message directly into your VS Code terminal
     console.error("====== NEXUS AI ENGINE CRASH LOG ======");
     console.error(apiGatewayError);
     console.error("=======================================");
