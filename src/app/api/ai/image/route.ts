@@ -11,7 +11,9 @@ export async function POST(request: NextRequest) {
   try {
     // Start: Dynamic Payload Extraction
     const { userEmail, imagePrompt } = await request.json();
-    const rateLimitIdentifier = userEmail || request.ip || "global_anonymous_image_node";
+    // Upgraded request.ip to headers fetch to pass strict production TypeScript type checking
+    const clientIpAddress = request.headers.get("x-forwarded-for") || "127.0.0.1";
+    const rateLimitIdentifier = userEmail || clientIpAddress || "global_anonymous_image_node";
     // End: Dynamic Payload Extraction
 
     // Start: Upstash Redis Rate Limiter Shield Verification
@@ -39,7 +41,6 @@ export async function POST(request: NextRequest) {
       body: JSON.stringify({ prompt: imagePrompt }),
     });
 
-    // Content Type Pre-flight interception to kill broken image bugs
     const contentTypeHeader = cloudflareResponse.headers.get("content-type") || "";
     
     if (!cloudflareResponse.ok || contentTypeHeader.includes("application/json")) {
@@ -50,7 +51,6 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Safe execution block once byte stream is verified as a valid image format
     const imageBlobBuffer = await cloudflareResponse.arrayBuffer();
     const base64ImageString = Buffer.from(imageBlobBuffer).toString("base64");
     const parsedDataUrl = `data:image/png;base64,${base64ImageString}`;

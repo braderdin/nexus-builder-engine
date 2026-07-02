@@ -16,7 +16,9 @@ export async function POST(request: NextRequest) {
   try {
     // Start: Dynamic Context Payload Extraction
     const { userEmail, userPrompt, targetAiModule } = await request.json();
-    const rateLimitIdentifier = userEmail || request.ip || "global_anonymous_node";
+    // Upgraded request.ip to headers fetch to pass strict production TypeScript type checking
+    const clientIpAddress = request.headers.get("x-forwarded-for") || "127.0.0.1";
+    const rateLimitIdentifier = userEmail || clientIpAddress || "global_anonymous_node";
     // End: Dynamic Context Payload Extraction
 
     // Start: Upstash Redis Token Allocation Verification Shield
@@ -92,8 +94,6 @@ export async function POST(request: NextRequest) {
     const groqOutputText = groqChatCompletion.choices[0]?.message?.content || "Groq client output buffer returned empty.";
     return NextResponse.json({ responseText: groqOutputText }, { status: 200 });
     // End: Default Primary Core Channel Route - Lightning Fast Groq Cloud Pipeline
-
-    // End: Dynamic Multi-Provider AI Switch Allocation Controller
 
   } catch (apiUnifiedCrashError: any) {
     return NextResponse.json(
