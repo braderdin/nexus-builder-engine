@@ -7,7 +7,9 @@ import { useRouter } from "next/navigation";
 
 // Start: External Backend, Component, and Localization Dependency Imports
 import { supabase } from "@/lib/supabase/client";
+import { deployMerchantWebsiteBlueprint } from "@/lib/supabase/sites";
 import AiConsole from "@/components/common/AiConsole";
+import DynamicRenderer from "@/components/templates/DynamicRenderer";
 import { localizationDictionaries, LanguageCode } from "@/config/dictionaries";
 // End: External Backend and Component Dependency Imports
 
@@ -19,6 +21,7 @@ interface WebTemplate {
   description: string;
   features: string[];
   isPremium: boolean;
+  layout_data: Record<string, any>; // Integrated to seed the database parser engine
 }
 
 const PREBUILT_TEMPLATES: WebTemplate[] = [
@@ -29,6 +32,18 @@ const PREBUILT_TEMPLATES: WebTemplate[] = [
     description: "Highly optimized single-page store structure. Features a frictionless order form routing checkouts straight to the merchant's WhatsApp line.",
     features: ["Instant WA Checkout", "Image Auto-Compression", "Ultra-Fast Mobile Performance"],
     isPremium: false,
+    layout_data: {
+      heroSection: {
+        headline: "Welcome to Our Premium WhatsApp Express Store",
+        subheadline: "Browse high-converting local merchant configurations. Order directly through the encrypted WhatsApp gateway in one single tap.",
+        ctaText: "Browse Collection"
+      },
+      whatsappFormSection: {
+        promptTitle: "Direct Order Form Pipeline",
+        buttonText: "Send Merchant Order via WhatsApp",
+        targetNumber: "60123456789"
+      }
+    }
   },
   {
     id: "tpl-seo-local",
@@ -37,6 +52,18 @@ const PREBUILT_TEMPLATES: WebTemplate[] = [
     description: "Built for local service businesses. Structured with perfect semantic HTML and OpenGraph schema metadata to rank rapidly on Google search results.",
     features: ["Perfect SEO Structural Score", "Google Maps Matrix Ready", "High-Conversion Lead Form"],
     isPremium: false,
+    layout_data: {
+      heroSection: {
+        headline: "Rank Higher with Local SEO Architectures",
+        subheadline: "Engineered specifically to claim top organic rankings on search engines for home and digital services.",
+        ctaText: "Book Service Now"
+      },
+      whatsappFormSection: {
+        promptTitle: "Get a Free Consultation Invoice",
+        buttonText: "Connect with Local Specialist",
+        targetNumber: "60198765432"
+      }
+    }
   },
   {
     id: "tpl-ai-dynamic",
@@ -45,6 +72,7 @@ const PREBUILT_TEMPLATES: WebTemplate[] = [
     description: "Advanced dynamic shell layout that uses our core AI agent matrix to auto-generate personalized branding assets and targeted copywriting.",
     features: ["AI Copywriting Generator", "Unlimited Dynamic Sections", "Ad-Free Ecosystem Access"],
     isPremium: true,
+    layout_data: {}
   },
 ];
 // End: Mock Template Architecture Definitions
@@ -58,6 +86,9 @@ export default function DashboardPage() {
   const [isDataLoading, setIsDataLoading] = useState<boolean>(true);
   const [selectedTemplateFilter, setSelectedTemplateFilter] = useState<string>("All");
   const [currentLanguage, setCurrentLanguage] = useState<LanguageCode>("en");
+  const [activePreviewJson, setActivePreviewJson] = useState<Record<string, any>>(PREBUILT_TEMPLATES[0].layout_data);
+  const [isDeploying, setIsDeploying] = useState<boolean>(false);
+  const [deploymentStatusMessage, setDeploymentStatusMessage] = useState<string | null>(null);
   // End: Component Local State Matrix
 
   // Start: Secure Session Lifecycle Hook Validation
@@ -66,7 +97,6 @@ export default function DashboardPage() {
       const { data: { session }, error } = await supabase.auth.getSession();
       
       if (error || !session) {
-        // Enforces access token guarding by ejecting unauthenticated requests
         router.push("/auth");
       } else {
         setUserProfile(session.user);
@@ -85,6 +115,37 @@ export default function DashboardPage() {
   };
   // End: Secure Sign-Out Handler Pipeline
 
+  // Start: Secure Database Ingestion Pipeline Deploy Trigger
+  const handleDeployBlueprintAction = async (template: WebTemplate) => {
+    if (template.isPremium) {
+      alert("Upgrade required. This blueprint requires an active premium commercial license tier.");
+      return;
+    }
+
+    setIsDeploying(true);
+    setDeploymentStatusMessage(null);
+
+    // Dynamic mock domain generation for initial testing fasa
+    const randomizedSubdomain = `merchant-${Math.floor(1000 + Math.random() * 9000)}`;
+
+    const { data, error } = await deployMerchantWebsiteBlueprint({
+      user_id: userProfile.id,
+      subdomain: randomizedSubdomain,
+      seo_title: template.name,
+      seo_description: template.description,
+      whatsapp_number: template.layout_data.whatsappFormSection?.targetNumber || "60123456789",
+      layout_data: template.layout_data,
+    });
+
+    if (error) {
+      setDeploymentStatusMessage(`Deployment Fault: ${error.message || "Zod validation rejection."}`);
+    } else {
+      setDeploymentStatusMessage(`Success! Active site node routed to: ${data.subdomain}.superpage.link`);
+    }
+    setIsDeploying(false);
+  };
+  // End: Secure Database Ingestion Pipeline Deploy Trigger
+
   // Start: Dynamic Template Filtering Calculation Logic
   const filteredTemplates = PREBUILT_TEMPLATES.filter((template) => {
     if (selectedTemplateFilter === "All") return true;
@@ -92,9 +153,7 @@ export default function DashboardPage() {
   });
   // End: Dynamic Template Filtering Calculation Logic
 
-  // Start: Bind Dynamic Localization Dictionary Matrix
   const dict = localizationDictionaries[currentLanguage];
-  // End: Bind Dynamic Localization Dictionary Matrix
 
   if (isDataLoading) {
     return (
@@ -107,26 +166,22 @@ export default function DashboardPage() {
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 font-sans antialiased">
       
-      {/* Start: Professional Dashboard Top Navigation Bar */}
+      {/* Start: Top Navigation Layout */}
       <nav className="border-b border-slate-900 bg-slate-900/50 backdrop-blur-md sticky top-0 z-50 px-4 sm:px-6 py-4 flex flex-col gap-4 sm:flex-row sm:justify-between sm:items-center">
         <div className="flex items-center justify-between w-full sm:w-auto">
           <div className="flex items-center gap-3">
             <div className="h-8 w-8 rounded-lg bg-blue-600 flex items-center justify-center font-bold text-white shadow-md shadow-blue-950">N</div>
             <span className="font-bold tracking-tight text-white">{dict.navBrand}</span>
           </div>
-          
-          {/* Mobile Explicit Disconnect Option */}
           <button
             onClick={handleUserSignOut}
-            className="sm:hidden text-[11px] bg-slate-950 hover:bg-slate-800 border border-slate-800 text-slate-300 font-semibold px-3 py-1.5 rounded-lg transition-colors"
+            className="sm:hidden text-[11px] bg-slate-950 hover:bg-slate-800 border border-slate-800 text-slate-300 font-semibold px-3 py-1.5 rounded-lg"
           >
             {dict.disconnectBtn}
           </button>
         </div>
 
-        {/* Start: Localization Toggle Control and Sessions Container */}
         <div className="flex items-center justify-between sm:justify-end gap-4 w-full sm:w-auto border-t border-slate-900 pt-3 sm:border-0 sm:pt-0">
-          {/* Language Switcher Switch Matrix */}
           <div className="flex gap-1 bg-slate-950 p-1 rounded-xl border border-slate-800">
             <button
               onClick={() => setCurrentLanguage("en")}
@@ -158,40 +213,40 @@ export default function DashboardPage() {
             </button>
           </div>
         </div>
-        {/* End: Localization Toggle Control and Sessions Container */}
       </nav>
-      {/* End: Professional Dashboard Top Navigation Bar */}
+      {/* End: Top Navigation Layout */}
 
-      {/* Start: Primary Workspace Inner Container */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 py-6 sm:py-10 space-y-10">
         
-        {/* Start: Welcome and Analytical Heading Header Section */}
-        <div className="space-y-1">
+        <div>
           <h2 className="text-xl sm:text-2xl font-extrabold text-white tracking-tight">{dict.welcomeHeader}</h2>
           <p className="text-xs sm:text-sm text-slate-400 leading-relaxed max-w-3xl">{dict.welcomeSub}</p>
         </div>
-        {/* End: Welcome and Analytical Heading Header Section */}
 
-        {/* Start: Section Divider - Core Site Deployments Grid */}
-        <div className="space-y-4">
-          <h3 className="text-xs font-bold uppercase tracking-widest text-slate-500">{dict.activeDeployments}</h3>
-          <div className="border border-dashed border-slate-800 rounded-2xl p-6 sm:p-8 text-center bg-slate-900/20">
-            <p className="text-xs sm:text-sm text-slate-400 mb-4">{dict.noDeployments}</p>
-            <button className="w-full sm:w-auto bg-blue-600 hover:bg-blue-500 text-white font-semibold text-xs px-5 py-3 rounded-xl transition-colors shadow-lg shadow-blue-950/40">
-              {dict.triggerBuildBtn}
-            </button>
+        {/* Start: Database Execution Deployment Status Alert Container */}
+        {deploymentStatusMessage && (
+          <div className={`p-4 border text-xs rounded-xl font-medium ${
+            deploymentStatusMessage.startsWith("Success")
+              ? "bg-emerald-950/40 border-emerald-800 text-emerald-400"
+              : "bg-red-950/40 border-red-800 text-red-400"
+          }`}>
+            {deploymentStatusMessage}
           </div>
-        </div>
-        {/* End: Section Divider - Core Site Deployments Grid */}
+        )}
+        {/* End: Database Execution Deployment Status Alert Container */}
 
-        {/* Start: Section Divider - Artificial Intelligence Console Injection */}
+        {/* Start: Section Divider - Live Parser Visual Preview Canvas Layout */}
+        <div className="space-y-4">
+          <h3 className="text-xs font-bold uppercase tracking-widest text-slate-500">Live Visual Blueprint Parser</h3>
+          <DynamicRenderer layoutData={activePreviewJson} />
+        </div>
+        {/* End: Section Divider - Live Parser Visual Preview Canvas Layout */}
+
         <div className="space-y-4">
           <h3 className="text-xs font-bold uppercase tracking-widest text-slate-500">{dict.aiConsoleTitle}</h3>
           <AiConsole currentUserEmail={userProfile?.email || ""} />
         </div>
-        {/* End: Section Divider - Artificial Intelligence Console Injection */}
 
-        {/* Start: Section Divider - Core Template Selection Panel */}
         <div className="space-y-6">
           <div className="flex flex-col lg:flex-row lg:justify-between lg:items-center gap-4 border-b border-slate-900 pb-4">
             <div className="space-y-1">
@@ -199,7 +254,6 @@ export default function DashboardPage() {
               <p className="text-xs text-slate-400">{dict.selectBlueprintSub}</p>
             </div>
             
-            {/* Start: Reactive Filter Tab Controls */}
             <div className="flex flex-wrap gap-1.5 bg-slate-900 p-1 rounded-xl border border-slate-800 self-start lg:self-auto">
               {["All", "E-Commerce", "Service Business", "Dynamic SaaS"].map((tabName) => (
                 <button
@@ -207,7 +261,7 @@ export default function DashboardPage() {
                   onClick={() => setSelectedTemplateFilter(tabName)}
                   className={`text-[11px] px-2.5 py-1.5 rounded-lg font-medium transition-all ${
                     selectedTemplateFilter === tabName
-                      ? "bg-blue-600 text-white shadow-md shadow-blue-950"
+                      ? "bg-blue-600 text-white"
                       : "text-slate-400 hover:text-slate-200"
                   }`}
                 >
@@ -215,15 +269,14 @@ export default function DashboardPage() {
                 </button>
               ))}
             </div>
-            {/* End: Reactive Filter Tab Controls */}
           </div>
 
-          {/* Start: Dynamic Structural Blueprint Grid Deployment */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {filteredTemplates.map((template) => (
               <div
                 key={template.id}
-                className="bg-slate-900 border border-slate-800 rounded-2xl p-5 sm:p-6 flex flex-col justify-between hover:border-slate-700 transition-all group relative overflow-hidden shadow-xl"
+                onClick={() => template.layout_data && setActivePreviewJson(template.layout_data)}
+                className="bg-slate-900 border border-slate-800 rounded-2xl p-5 sm:p-6 flex flex-col justify-between hover:border-blue-500 cursor-pointer transition-all group relative overflow-hidden shadow-xl"
               >
                 <div>
                   <div className="flex justify-between items-start mb-4">
@@ -231,8 +284,8 @@ export default function DashboardPage() {
                       {template.category}
                     </span>
                     {template.isPremium && (
-                      <span className="text-[10px] uppercase font-bold tracking-widest bg-amber-950/60 text-amber-400 px-2.5 py-1 rounded-md border border-amber-800 animate-pulse">
-                        Premium Tier
+                      <span className="text-[10px] uppercase font-bold tracking-widest bg-amber-950/60 text-amber-400 px-2.5 py-1 rounded-md border border-amber-800">
+                        Premium
                       </span>
                     )}
                   </div>
@@ -254,26 +307,25 @@ export default function DashboardPage() {
                     ))}
                   </div>
                   <button
+                    onClick={(e) => {
+                      e.stopPropagation(); // Prevents layout switching trigger clash
+                      handleDeployBlueprintAction(template);
+                    }}
                     className={`w-full font-semibold text-xs py-3 rounded-xl transition-all shadow-md ${
                       template.isPremium
-                        ? "bg-gradient-to-r from-amber-600 to-yellow-500 hover:from-amber-500 hover:to-yellow-400 text-slate-950 font-bold"
+                        ? "bg-gradient-to-r from-amber-600 to-yellow-500 text-slate-950 font-bold"
                         : "bg-slate-950 hover:bg-slate-800 border border-slate-800 text-white"
                     }`}
+                    disabled={isDeploying}
                   >
-                    {template.isPremium ? "Unlock with Premium License" : "Deploy Blueprint"}
+                    {isDeploying ? "Deploying Node..." : template.isPremium ? "Unlock Ticket" : "Deploy Blueprint"}
                   </button>
                 </div>
               </div>
             ))}
           </div>
-          {/* End: Dynamic Structural Blueprint Grid Deployment */}
-
         </div>
-        {/* End: Section Divider - Core Template Selection Panel */}
-
       </main>
-      {/* End: Primary Workspace Inner Container */}
-
     </div>
   );
 }
