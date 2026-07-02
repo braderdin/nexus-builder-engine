@@ -130,8 +130,8 @@ export default function DashboardPage() {
     if (error) {
       setDeploymentStatusMessage(`Deployment Fault: ${error.message || "Zod validation rejection."}`);
     } else {
-      // Branding updated to nexusbuild.site
-      setDeploymentStatusMessage(`Success! Active site node routed to: ${data.subdomain}.nexusbuild.site`);
+      // Correctly restored back to superpage.link free tier notification stream
+      setDeploymentStatusMessage(`Success! Active site node routed to: ${data.subdomain}.superpage.link`);
     }
     setIsDeploying(false);
   };
