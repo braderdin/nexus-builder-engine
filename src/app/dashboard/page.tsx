@@ -153,12 +153,58 @@ export default function DashboardPage() {
 
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 font-sans antialiased">
+      
+      {/* Start: Top Navigation Layout with Vercel/Linear Hover Mechanics */}
       <nav className="border-b border-slate-900 bg-slate-900/50 backdrop-blur-md sticky top-0 z-50 px-4 sm:px-6 py-4 flex flex-col gap-4 sm:flex-row sm:justify-between sm:items-center">
-        <div className="flex items-center justify-between w-full sm:w-auto">
+        <div className="flex items-center justify-between w-full sm:w-auto gap-8">
           <div className="flex items-center gap-3">
             <div className="h-8 w-8 rounded-lg bg-blue-600 flex items-center justify-center font-bold text-white shadow-md shadow-blue-950">N</div>
             <span className="font-bold tracking-tight text-white">{dict.navBrand}</span>
           </div>
+
+          {/* Start: Linear/Vercel Hover Micro-Menu Architecture */}
+          <div className="hidden lg:flex items-center gap-6">
+            <div className="relative group py-2">
+              <button className="text-xs font-medium text-slate-400 hover:text-white transition-colors flex items-center gap-1 cursor-default">
+                Platform <span className="text-[9px] opacity-50 group-hover:rotate-180 transition-transform duration-200">▼</span>
+              </button>
+              
+              {/* Slidedown Panel Context Triggered on Hover */}
+              <div className="absolute left-0 top-full pt-2 w-80 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 transform scale-95 group-hover:scale-100 z-50">
+                <div className="bg-slate-900 border border-slate-800 rounded-2xl p-4 shadow-2xl grid grid-cols-1 gap-2">
+                  <div className="p-2 hover:bg-slate-950 rounded-xl transition-colors group/item">
+                    <h5 className="text-xs font-bold text-white group-hover/item:text-blue-400 transition-colors">Core Visual Engine</h5>
+                    <p className="text-[10px] text-slate-400 mt-0.5">High-fidelity React JSON layout semantic parser.</p>
+                  </div>
+                  <div className="p-2 hover:bg-slate-950 rounded-xl transition-colors group/item">
+                    <h5 className="text-xs font-bold text-white group-hover/item:text-blue-400 transition-colors">AI Creative Matrix</h5>
+                    <p className="text-[10px] text-slate-400 mt-0.5">Flux-1 text-to-image production asset model nodes.</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="relative group py-2">
+              <button className="text-xs font-medium text-slate-400 hover:text-white transition-colors flex items-center gap-1 cursor-default">
+                Ecosystem <span className="text-[9px] opacity-50 group-hover:rotate-180 transition-transform duration-200">▼</span>
+              </button>
+              
+              <div className="absolute left-0 top-full pt-2 w-80 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 transform scale-95 group-hover:scale-100 z-50">
+                <div className="bg-slate-900 border border-slate-800 rounded-2xl p-4 shadow-2xl grid grid-cols-1 gap-2">
+                  <div className="p-2 hover:bg-slate-950 rounded-xl transition-colors group/item">
+                    <h5 className="text-xs font-bold text-white group-hover/item:text-blue-400 transition-colors">Supabase Persistence</h5>
+                    <p className="text-[10px] text-slate-400 mt-0.5">Singapore ap-southeast cluster data storage.</p>
+                  </div>
+                  <div className="p-2 hover:bg-slate-950 rounded-xl transition-colors group/item">
+                    <h5 className="text-xs font-bold text-white group-hover/item:text-blue-400 transition-colors">Upstash AI Guard</h5>
+                    <p className="text-[10px] text-slate-400 mt-0.5">Sliding window rate limit anti-spam protection ledger.</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          {/* End: Linear/Vercel Hover Micro-Menu Architecture */}
+
           <button
             onClick={handleUserSignOut}
             className="sm:hidden text-[11px] bg-slate-950 hover:bg-slate-800 border border-slate-800 text-slate-300 font-semibold px-3 py-1.5 rounded-lg"
@@ -199,6 +245,7 @@ export default function DashboardPage() {
           </div>
         </div>
       </nav>
+      {/* End: Top Navigation Layout */}
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 py-6 sm:py-10 space-y-10">
         <div>
@@ -221,12 +268,10 @@ export default function DashboardPage() {
           <DynamicRenderer layoutData={activePreviewJson} />
         </div>
 
-        {/* Start: Section Divider - Cloudflare Workers AI Image Generator Injected */}
         <div className="space-y-4">
           <h3 className="text-xs font-bold uppercase tracking-widest text-slate-500">Nexus Media Creative Suite</h3>
           <ImageGenerator currentUserEmail={userProfile?.email || ""} />
         </div>
-        {/* End: Section Divider - Cloudflare Workers AI Image Generator Injected */}
 
         <div className="space-y-4">
           <h3 className="text-xs font-bold uppercase tracking-widest text-slate-500">{dict.aiConsoleTitle}</h3>

@@ -39,21 +39,23 @@ export async function POST(request: NextRequest) {
       body: JSON.stringify({ prompt: imagePrompt }),
     });
 
-    if (!cloudflareResponse.ok) {
-      throw new Error("Cloudflare Workers AI computation failure encountered.");
+    // Content Type Pre-flight interception to kill broken image bugs
+    const contentTypeHeader = cloudflareResponse.headers.get("content-type") || "";
+    
+    if (!cloudflareResponse.ok || contentTypeHeader.includes("application/json")) {
+      const errorJsonPayload = await cloudflareResponse.json();
+      return NextResponse.json(
+        { error: "Cloudflare AI Engine Rejection", message: errorJsonPayload.errors?.[0]?.message || "Failed to generate visual content stream." },
+        { status: 400 }
+      );
     }
 
-    // Binary image response stream data conversion
+    // Safe execution block once byte stream is verified as a valid image format
     const imageBlobBuffer = await cloudflareResponse.arrayBuffer();
-    
-    // NOTE FOR BRADERDIN: This is where we trigger our existing Cloudflare R2 injection pipeline
-    // to save the generated buffer array, avoiding expensive database text layer usage.
-    
-    // Temporary response representation returning base64 stream wrapper
     const base64ImageString = Buffer.from(imageBlobBuffer).toString("base64");
     const parsedDataUrl = `data:image/png;base64,${base64ImageString}`;
 
-    return NextResponse.json({ imageUrl: parsedDataUrl, targetStatus: "Persisted to R2 Context" }, { status: 200 });
+    return NextResponse.json({ imageUrl: parsedDataUrl, targetStatus: "Persisted to Context" }, { status: 200 });
     // End: Cloudflare Workers AI REST API Fetch Orchestration
 
   } catch (imageEngineError: any) {
@@ -63,4 +65,4 @@ export async function POST(request: NextRequest) {
     );
   }
 }
-// End: AI Image Generation POST Endpoint Route Handler
+// End: AI Engine Live POST Endpoint Route Handler

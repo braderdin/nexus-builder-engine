@@ -1,36 +1,52 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# 🚀 Nexus Web Builder Engine (SaaS Platform)
 
-## Getting Started
+Nexus Web Builder is a next-generation, high-performance SaaS Website Builder engineered for local merchants and small businesses. Powered by a unified dynamic multi-provider AI matrix, the platform auto-generates localized layouts, shapes high-converting copy, and deploys production-ready single-page nodes instantly.
 
-First, run the development server:
+---
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+## 🛠️ Architecture & Technical Stack
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+The entire application runs on an enterprise-grade infrastructure utilizing a 100% Free Tier network architecture:
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+*   **Frontend & Core Framework:** Next.js (App Router with Turbopack compilation), TypeScript, React.js, Tailwind CSS.
+*   **Database Isolation & Persistence:** Supabase PostgreSQL (JSONB schema configurations & Row-Level Security).
+*   **Edge Storage Suite:** Cloudflare R2 Object Storage buckets.
+*   **Security & Anti-Spam Gateways:** Upstash Redis Sliding Window Rate-Limiting token guards.
+*   **Unified Artificial Intelligence Engines:**
+    *   **Groq Cloud (`llama-3.1-8b-instant`):** Primary low-latency copywriting and configuration streaming.
+    *   **OpenRouter AI (`deepseek-r1`):** Advanced logical reasoning agent for automatic layout schema self-healing.
+    *   **Cloudflare Workers AI (`flux-1-schnell`):** Direct text-to-image pipeline for free marketing asset asset generation.
+    *   **Google Gemini Studio:** Active automated failover channel redundancy layer.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+---
 
-## Learn More
+## 🗺️ Engineering Master Roadmap
 
-To learn more about Next.js, take a look at the following resources:
+### 📦 Fasa 1: Core Foundation & Security Matrix (Completed)
+*   [x] Integrated singleton Supabase client connections and standard Google OAuth pipelines.
+*   [x] Deployed Zod security guardrails preventing cross-site scripting (Anti-XSS Payload Sanitizer).
+*   [x] Enforced Upstash token allocation rules (sliding window restriction capped at 5 prompts per 60 seconds).
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+### 🎨 Fasa 2: Visual Engine & Dynamic JSON Parser (Completed)
+*   [x] Constructed high-fidelity React Dynamic Renderer parsing JSON data directly into mobile-first views.
+*   [x] Tied secure database insertion channels onto the "Deploy Blueprint" dashboard mechanics.
+*   [x] Built the Vercel/Linear-inspired slidedown hover navigation interface panels.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+### 🌐 Fasa 3: Multi-Tenant Subdomain Ingestion (In-Progress)
+*   [ ] Write Next.js middleware rewrites to extract unique tenant identifiers cleanly from host buffers.
+*   [ ] Configure automatic multi-tenant route allocation maps (`/site/[subdomain]/page.tsx`).
 
-## Deploy on Vercel
+### 🤖 Fasa 4: Deep AI Agent Self-Healing Engine
+*   [ ] Train Google Gemini Studio to analyze faulty theme payloads and stream structural json fixes back onto the user canvas.
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+### 💰 Fasa 5: Ad-Manager Wrapper & Stripe Checkout Pipelines
+*   [ ] Deploy native ad-script slots targeting free-tier accounts.
+*   [ ] Integrate local billing provider hooks converting profiles dynamically on commercial upgrades.
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+---
+
+## 🧪 Local Deployment & Installation
+
+1. Clone this remote private repository instance down to your storage drive:
+   ```bash
+   git clone [https://github.com/braderdin/nexus-builder-engine.git](https://github.com/braderdin/nexus-builder-engine.git)
