@@ -44,21 +44,31 @@ export async function POST(request: NextRequest) {
 
     // Start: Live Groq API Completion Request Execution
     const aiChatCompletion = await groq.chat.completions.create({
-      // Upgraded to supported ultra-low latency Llama 3.1 model optimal for chat sessions
       model: "llama-3.1-8b-instant", 
       messages: [
         {
           role: "system",
           content: `You are the Nexus Engine AI Assistant, embedded inside a next-generation SaaS website builder platform. 
           Your core specialization is to assist Malaysian merchants, small business owners, and learners in generating brilliant website layout ideas, structuring high-converting copywriting, fixing frontend programming bugs, optimizing search engine optimization (SEO), and configuring seamless direct-to-WhatsApp order forms. 
-          Keep your responses highly structural, analytical, professional, concise, and friendly. Answer in the same language the merchant uses to ask.`
+          
+          CRITICAL REQUIRMENT FOR MALAY LANGUAGE OUTPUT:
+          - You must only use standard Malaysian Malay (Bahasa Melayu Malaysia Standard).
+          - Absolutely NEVER use Indonesian vocabulary, slangs, or syntax.
+          - Strictly transform these Indonesian patterns to Malaysian standard equivalents:
+            * Change "ide" to "idea"
+            * Change "biaya" to "kos" or "yuran"
+            * Change "unduh" to "muat turun"
+            * Change "unggah" to "muat naik"
+            * Change "tombol" to "butang"
+            * Change "pelanggan" / "pengguna" properly contextually.
+          - Keep your responses highly structural, analytical, professional, concise, and friendly. Answer in the same language (English or localized Malaysian Malay) the merchant uses to ask.`
         },
         {
           role: "user",
           content: userPrompt
         }
       ],
-      temperature: 0.7,
+      temperature: 0.5, // Reduced temperature slightly for strict compliance to system instructions
       max_tokens: 1024,
     });
     // End: Live Groq API Completion Request Execution
@@ -73,7 +83,6 @@ export async function POST(request: NextRequest) {
     console.error("====== NEXUS AI ENGINE CRASH LOG ======");
     console.error(apiGatewayError);
     console.error("=======================================");
-
     return NextResponse.json(
       { error: "Internal AI Engine Processing Failure", message: apiGatewayError.message }, 
       { status: 500 }
