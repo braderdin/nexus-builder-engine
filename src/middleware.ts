@@ -17,8 +17,9 @@ export function middleware(request: NextRequest) {
   // End: Internal Network Asset Guardrail Exclusions
 
   // Start: Extract Subdomain Identifier Based on Environment Matcher
+  // Surgically upgraded to .nexusbuild.site branding architecture
   const currentHost = process.env.NODE_ENV === "production" 
-    ? hostname.replace(".superpage.link", "")
+    ? hostname.replace(".nexusbuild.site", "")
     : hostname.replace(".localhost:3000", "");
   // End: Extract Subdomain Identifier Based on Environment Matcher
 
@@ -26,7 +27,7 @@ export function middleware(request: NextRequest) {
   const isCorePlatformRoute = 
     currentHost === hostname || 
     currentHost === "localhost:3000" || 
-    currentHost === "superpage.link" ||
+    currentHost === "nexusweb.co" ||
     url.pathname.startsWith("/auth") ||
     url.pathname.startsWith("/dashboard");
 

@@ -21,7 +21,7 @@ interface WebTemplate {
   description: string;
   features: string[];
   isPremium: boolean;
-  layout_data: Record<string, any>; // Integrated to seed the database parser engine
+  layout_data: Record<string, any>;
 }
 
 const PREBUILT_TEMPLATES: WebTemplate[] = [
@@ -81,7 +81,6 @@ const PREBUILT_TEMPLATES: WebTemplate[] = [
 export default function DashboardPage() {
   const router = useRouter();
   
-  // Start: Component Local State Matrix
   const [userProfile, setUserProfile] = useState<any>(null);
   const [isDataLoading, setIsDataLoading] = useState<boolean>(true);
   const [selectedTemplateFilter, setSelectedTemplateFilter] = useState<string>("All");
@@ -89,13 +88,10 @@ export default function DashboardPage() {
   const [activePreviewJson, setActivePreviewJson] = useState<Record<string, any>>(PREBUILT_TEMPLATES[0].layout_data);
   const [isDeploying, setIsDeploying] = useState<boolean>(false);
   const [deploymentStatusMessage, setDeploymentStatusMessage] = useState<string | null>(null);
-  // End: Component Local State Matrix
 
-  // Start: Secure Session Lifecycle Hook Validation
   useEffect(() => {
     const verifyUserSession = async () => {
       const { data: { session }, error } = await supabase.auth.getSession();
-      
       if (error || !session) {
         router.push("/auth");
       } else {
@@ -103,19 +99,14 @@ export default function DashboardPage() {
       }
       setIsDataLoading(false);
     };
-
     verifyUserSession();
   }, [router]);
-  // End: Secure Session Lifecycle Hook Validation
 
-  // Start: Secure Sign-Out Handler Pipeline
   const handleUserSignOut = async () => {
     await supabase.auth.signOut();
     router.push("/auth");
   };
-  // End: Secure Sign-Out Handler Pipeline
 
-  // Start: Secure Database Ingestion Pipeline Deploy Trigger
   const handleDeployBlueprintAction = async (template: WebTemplate) => {
     if (template.isPremium) {
       alert("Upgrade required. This blueprint requires an active premium commercial license tier.");
@@ -125,7 +116,6 @@ export default function DashboardPage() {
     setIsDeploying(true);
     setDeploymentStatusMessage(null);
 
-    // Dynamic mock domain generation for initial testing fasa
     const randomizedSubdomain = `merchant-${Math.floor(1000 + Math.random() * 9000)}`;
 
     const { data, error } = await deployMerchantWebsiteBlueprint({
@@ -140,18 +130,16 @@ export default function DashboardPage() {
     if (error) {
       setDeploymentStatusMessage(`Deployment Fault: ${error.message || "Zod validation rejection."}`);
     } else {
-      setDeploymentStatusMessage(`Success! Active site node routed to: ${data.subdomain}.superpage.link`);
+      // Branding updated to nexusbuild.site
+      setDeploymentStatusMessage(`Success! Active site node routed to: ${data.subdomain}.nexusbuild.site`);
     }
     setIsDeploying(false);
   };
-  // End: Secure Database Ingestion Pipeline Deploy Trigger
 
-  // Start: Dynamic Template Filtering Calculation Logic
   const filteredTemplates = PREBUILT_TEMPLATES.filter((template) => {
     if (selectedTemplateFilter === "All") return true;
     return template.category === selectedTemplateFilter;
   });
-  // End: Dynamic Template Filtering Calculation Logic
 
   const dict = localizationDictionaries[currentLanguage];
 
@@ -165,8 +153,6 @@ export default function DashboardPage() {
 
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 font-sans antialiased">
-      
-      {/* Start: Top Navigation Layout */}
       <nav className="border-b border-slate-900 bg-slate-900/50 backdrop-blur-md sticky top-0 z-50 px-4 sm:px-6 py-4 flex flex-col gap-4 sm:flex-row sm:justify-between sm:items-center">
         <div className="flex items-center justify-between w-full sm:w-auto">
           <div className="flex items-center gap-3">
@@ -200,7 +186,6 @@ export default function DashboardPage() {
               BM
             </button>
           </div>
-
           <div className="flex items-center gap-4">
             <span className="text-xs text-slate-400 font-medium hidden md:inline-block">
               Secure Node: {userProfile?.email}
@@ -214,16 +199,13 @@ export default function DashboardPage() {
           </div>
         </div>
       </nav>
-      {/* End: Top Navigation Layout */}
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 py-6 sm:py-10 space-y-10">
-        
         <div>
           <h2 className="text-xl sm:text-2xl font-extrabold text-white tracking-tight">{dict.welcomeHeader}</h2>
           <p className="text-xs sm:text-sm text-slate-400 leading-relaxed max-w-3xl">{dict.welcomeSub}</p>
         </div>
 
-        {/* Start: Database Execution Deployment Status Alert Container */}
         {deploymentStatusMessage && (
           <div className={`p-4 border text-xs rounded-xl font-medium ${
             deploymentStatusMessage.startsWith("Success")
@@ -233,14 +215,11 @@ export default function DashboardPage() {
             {deploymentStatusMessage}
           </div>
         )}
-        {/* End: Database Execution Deployment Status Alert Container */}
 
-        {/* Start: Section Divider - Live Parser Visual Preview Canvas Layout */}
         <div className="space-y-4">
           <h3 className="text-xs font-bold uppercase tracking-widest text-slate-500">Live Visual Blueprint Parser</h3>
           <DynamicRenderer layoutData={activePreviewJson} />
         </div>
-        {/* End: Section Divider - Live Parser Visual Preview Canvas Layout */}
 
         <div className="space-y-4">
           <h3 className="text-xs font-bold uppercase tracking-widest text-slate-500">{dict.aiConsoleTitle}</h3>
@@ -253,7 +232,6 @@ export default function DashboardPage() {
               <h3 className="text-sm font-bold uppercase tracking-widest text-slate-500">{dict.selectBlueprint}</h3>
               <p className="text-xs text-slate-400">{dict.selectBlueprintSub}</p>
             </div>
-            
             <div className="flex flex-wrap gap-1.5 bg-slate-900 p-1 rounded-xl border border-slate-800 self-start lg:self-auto">
               {["All", "E-Commerce", "Service Business", "Dynamic SaaS"].map((tabName) => (
                 <button
@@ -296,7 +274,6 @@ export default function DashboardPage() {
                     {template.description}
                   </p>
                 </div>
-
                 <div>
                   <div className="space-y-2 mb-6 border-t border-slate-950 pt-4">
                     {template.features.map((feature, idx) => (
@@ -308,7 +285,7 @@ export default function DashboardPage() {
                   </div>
                   <button
                     onClick={(e) => {
-                      e.stopPropagation(); // Prevents layout switching trigger clash
+                      e.stopPropagation();
                       handleDeployBlueprintAction(template);
                     }}
                     className={`w-full font-semibold text-xs py-3 rounded-xl transition-all shadow-md ${
