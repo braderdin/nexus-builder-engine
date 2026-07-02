@@ -10,6 +10,7 @@ import { supabase } from "@/lib/supabase/client";
 import { deployMerchantWebsiteBlueprint } from "@/lib/supabase/sites";
 import AiConsole from "@/components/common/AiConsole";
 import DynamicRenderer from "@/components/templates/DynamicRenderer";
+import ImageGenerator from "@/components/common/ImageGenerator";
 import { localizationDictionaries, LanguageCode } from "@/config/dictionaries";
 // End: External Backend and Component Dependency Imports
 
@@ -130,7 +131,6 @@ export default function DashboardPage() {
     if (error) {
       setDeploymentStatusMessage(`Deployment Fault: ${error.message || "Zod validation rejection."}`);
     } else {
-      // Correctly restored back to superpage.link free tier notification stream
       setDeploymentStatusMessage(`Success! Active site node routed to: ${data.subdomain}.superpage.link`);
     }
     setIsDeploying(false);
@@ -220,6 +220,13 @@ export default function DashboardPage() {
           <h3 className="text-xs font-bold uppercase tracking-widest text-slate-500">Live Visual Blueprint Parser</h3>
           <DynamicRenderer layoutData={activePreviewJson} />
         </div>
+
+        {/* Start: Section Divider - Cloudflare Workers AI Image Generator Injected */}
+        <div className="space-y-4">
+          <h3 className="text-xs font-bold uppercase tracking-widest text-slate-500">Nexus Media Creative Suite</h3>
+          <ImageGenerator currentUserEmail={userProfile?.email || ""} />
+        </div>
+        {/* End: Section Divider - Cloudflare Workers AI Image Generator Injected */}
 
         <div className="space-y-4">
           <h3 className="text-xs font-bold uppercase tracking-widest text-slate-500">{dict.aiConsoleTitle}</h3>
