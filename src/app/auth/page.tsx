@@ -17,9 +17,9 @@ export default function AuthenticationPage() {
   
   // Start: Component Local State Matrix
   const [isLoginView, setIsLoginView] = useState<boolean>(true);
-  const [email, setEmail] = useState<string>( "");
+  const [email, setEmail] = useState<string>("");
   const [password, setPassword] = useState<string>("");
-  const [username, setUsername] = useState<string>( "");
+  const [username, setUsername] = useState<string>("");
   const [uiErrorMessage, setUiErrorMessage] = useState<string | null>(null);
   const [isExecutionLoading, setIsExecutionLoading] = useState<boolean>(false);
   // End: Component Local State Matrix
@@ -36,7 +36,6 @@ export default function AuthenticationPage() {
           redirectTo: `${window.location.origin}/dashboard`,
         },
       });
-
       if (error) throw error;
     } catch (error: any) {
       setUiErrorMessage(error.message || "An error occurred during Google authentication initialization.");
@@ -50,13 +49,13 @@ export default function AuthenticationPage() {
     e.preventDefault();
     setIsExecutionLoading(true);
     setUiErrorMessage(null);
-
+    
     try {
       if (isLoginView) {
         // Start: Client Side Zod Schema Structural Pre-flight Verification
         loginSchema.parse({ email, password });
         // End: Client Side Zod Schema Structural Pre-flight Verification
-
+        
         // Start: Supabase Native Login Pipeline Execution
         const { error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) throw error;
@@ -67,7 +66,7 @@ export default function AuthenticationPage() {
         // Start: Client Side Zod Schema Structural Pre-flight Verification
         registerSchema.parse({ username, email, password, requireTwoFactor: true });
         // End: Client Side Zod Schema Structural Pre-flight Verification
-
+        
         // Start: Supabase Native Registration Pipeline Execution
         const { error } = await supabase.auth.signUp({
           email,
@@ -78,13 +77,14 @@ export default function AuthenticationPage() {
         });
         if (error) throw error;
         // End: Supabase Native Registration Pipeline Execution
-
+        
         alert("Registration initiated successfully. Please verify your email client or check initial 2FA constraints.");
         setIsLoginView(true);
       }
     } catch (validationOrApiError: any) {
       if (validationOrApiError instanceof z.ZodError) {
-        setUiErrorMessage(validationOrApiError.errors[0].message);
+        // Upgraded .errors to .issues to pass strict production TypeScript type checking
+        setUiErrorMessage(validationOrApiError.issues[0]?.message || "Validation schema rejection.");
       } else {
         setUiErrorMessage(validationOrApiError.message || "Authentication gateway execution failure.");
       }
@@ -130,7 +130,7 @@ export default function AuthenticationPage() {
               />
             </div>
           )}
-
+          
           <div>
             <label className="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">Email Address</label>
             <input
@@ -142,19 +142,19 @@ export default function AuthenticationPage() {
               disabled={isExecutionLoading}
             />
           </div>
-
+          
           <div>
             <label className="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">Password</label>
             <input
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              placeholder="••••••••••••"
+              placeholder="••••••••"
               className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-blue-500 transition-colors"
               disabled={isExecutionLoading}
             />
           </div>
-
+          
           <button
             type="submit"
             className="w-full bg-blue-600 hover:bg-blue-500 text-white font-semibold text-sm rounded-xl py-3 transition-colors shadow-lg shadow-blue-950/50 disabled:opacity-50"
@@ -221,3 +221,4 @@ export default function AuthenticationPage() {
     </div>
   );
 }
+// End: Authentication Interface Component
