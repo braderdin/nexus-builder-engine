@@ -11,6 +11,7 @@ import { siteConfigSchema } from "@/lib/validations/site";
 export const deployMerchantWebsiteBlueprint = async (
   sitePayload: DeployedSiteConfiguration
 ): Promise<{ data: any; error: any }> => {
+  
   // Start: Dynamic Security Serialization Pre-flight Check
   try {
     siteConfigSchema.parse({
@@ -21,6 +22,7 @@ export const deployMerchantWebsiteBlueprint = async (
       themeLayoutJson: JSON.stringify(sitePayload.layout_data),
     });
   } catch (zodValidationError: any) {
+    // Correctly structured return payload to capture schema failures early
     return { data: null, error: zodValidationError };
   }
   // End: Dynamic Security Serialization Pre-flight Check
