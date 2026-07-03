@@ -230,7 +230,6 @@ export default function LeadsPage() {
   const [isDataLoading, setIsDataLoading] = useState<boolean>(true);
   const [leads, setLeads] = useState<CustomerLead[]>(MOCK_LEADS);
   const [selectedLead, setSelectedLead] = useState<CustomerLead | null>(null);
-  const [searchTerm, setSearchTerm] = useState<string>(""); // Re-introduced search term capability
 
   // Start: User Session Verification Effect
   useEffect(() => {
@@ -249,26 +248,14 @@ export default function LeadsPage() {
   }, [router]);
   // End: User Session Verification Effect
 
-  // Start: Dynamic Computed Search Logic Filter
-  const filteredLeads = useMemo(() => {
-    return leads.filter((lead) => {
-      return (
-        lead.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        lead.product.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        lead.phone.includes(searchTerm)
-      );
-    });
-  }, [leads, searchTerm]);
-  // End: Dynamic Computed Search Logic Filter
-
   // Start: Computed Metrics for Header
   const totalPipelineValue = useMemo(() => {
-    return filteredLeads.reduce((sum, lead) => sum + lead.value, 0);
-  }, [filteredLeads]);
+    return leads.reduce((sum, lead) => sum + lead.value, 0);
+  }, [leads]);
 
   const activeConversionLeads = useMemo(() => {
-    return filteredLeads.filter(lead => lead.status === 'new' || lead.status === 'processing').length;
-  }, [filteredLeads]);
+    return leads.filter(lead => lead.status === 'new' || lead.status === 'processing').length;
+  }, [leads]);
   // End: Computed Metrics for Header
 
   const handleStatusUpdate = (leadId: string, newStatus: LeadStatus, openWhatsApp: boolean = false) => {
@@ -296,7 +283,7 @@ export default function LeadsPage() {
     );
   }
 
-  const leadsByStatus = (status: LeadStatus) => filteredLeads.filter(lead => lead.status === status);
+  const leadsByStatus = (status: LeadStatus) => leads.filter(lead => lead.status === status);
 
   return (
     // Start: Main Container for CRM Leads Page
@@ -326,25 +313,13 @@ export default function LeadsPage() {
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 py-8 sm:py-12 space-y-10">
         {/* Start: Page Header */}
-        <div className="mb-8 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-          <div>
-            <h2 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">
-              Advanced CRM Management Grid Dashboard
-            </h2>
-            <p className="mt-2 text-sm sm:text-base text-slate-400 leading-relaxed">
-              Track and manage all your customer leads and sales pipeline activities in real-time.
-            </p>
-          </div>
-          {/* Re-introduced Search Component styled perfectly with Vercel theme */}
-          <div className="w-full md:w-80">
-            <input
-              type="text"
-              placeholder="Search by name, phone or product..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full bg-slate-900 border border-slate-800 rounded-xl px-4 py-2.5 text-xs text-white focus:ring-2 focus:ring-blue-500 focus:outline-none placeholder-slate-500 transition-all"
-            />
-          </div>
+        <div className="mb-8 text-center sm:text-left">
+          <h2 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">
+            Advanced CRM Management Grid Dashboard
+          </h2>
+          <p className="mt-2 text-sm sm:text-base text-slate-400 leading-relaxed max-w-3xl mx-auto sm:mx-0">
+            Track and manage all your customer leads and sales pipeline activities in real-time.
+          </p>
         </div>
         {/* End: Page Header */}
 
@@ -372,7 +347,7 @@ export default function LeadsPage() {
               <span className="text-xs px-2 py-0.5 rounded-full bg-blue-600 text-white font-medium">{leadsByStatus('new').length}</span>
             </h3>
             {leadsByStatus('new').length === 0 && (
-              <p className="text-xs text-slate-500 text-center py-4">No new leads matches.</p>
+              <p className="text-xs text-slate-500 text-center py-4">No new leads.</p>
             )}
             <div className="space-y-3">
               {leadsByStatus('new').map((lead) => (
