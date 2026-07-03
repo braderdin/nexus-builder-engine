@@ -357,6 +357,15 @@ export default function DashboardPage() {
               Billing & Invoices
             </a>
             {/* End: Billing & Invoices Link (Desktop) */}
+
+            {/* Start: System Diagnostics Link (Desktop) */}
+            <a
+              href="/dashboard/diagnostics"
+              className="text-xs font-medium text-slate-400 hover:text-white transition-colors px-3 py-2 rounded-lg"
+            >
+              System Diagnostics
+            </a>
+            {/* End: System Diagnostics Link (Desktop) */}
           </div>
           {/* End: Linear/Vercel Hover Micro-Menu Architecture */}
 
