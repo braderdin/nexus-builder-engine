@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 
-// Start: Multi-Tenant Subdomain Rewriting Middleware
-export function middleware(request: NextRequest) {
+// Start: Multi-Tenant Subdomain Rewriting Proxy
+export function proxy(request: NextRequest) {
   const url = request.nextUrl.clone();
   const hostname = request.headers.get("host") || "";
 
@@ -17,16 +17,15 @@ export function middleware(request: NextRequest) {
   // End: Internal Network Asset Guardrail Exclusions
 
   // Start: Extract Subdomain Identifier Based on Environment Matcher
-  // Reverted back to free-tier superpage.link cosmetic branding blueprint
-  const currentHost = process.env.NODE_ENV === "production" 
+  const currentHost = process.env.NODE_ENV === "production"
     ? hostname.replace(".superpage.link", "")
     : hostname.replace(".localhost:3000", "");
   // End: Extract Subdomain Identifier Based on Environment Matcher
 
   // Start: Shield Core Application Platform Paths From Mutation
-  const isCorePlatformRoute = 
-    currentHost === hostname || 
-    currentHost === "localhost:3000" || 
+  const isCorePlatformRoute =
+    currentHost === hostname ||
+    currentHost === "localhost:3000" ||
     currentHost === "superpage.link" ||
     url.pathname.startsWith("/auth") ||
     url.pathname.startsWith("/dashboard");
@@ -41,4 +40,4 @@ export function middleware(request: NextRequest) {
   return NextResponse.rewrite(url);
   // End: Silently Rewrite Endpoint Target Routing Internally
 }
-// End: Multi-Tenant Subdomain Rewriting Middleware
+// End: Multi-Tenant Subdomain Rewriting Proxy

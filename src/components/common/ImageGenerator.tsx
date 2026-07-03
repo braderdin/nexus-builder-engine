@@ -35,15 +35,24 @@ export default function ImageGenerator({ currentUserEmail }: ImageGeneratorProps
         }),
       });
 
+      // Start: Process API Response for Image Data or Error Payload
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.message || "Failed to compile image asset buffer.");
+        // If the response is not OK, it means an error occurred on the server.
+        // The /api/ai/image endpoint is designed to return structured JSON errors.
+        setErrorNotification(data.message || data.error || "Failed to compile image asset buffer due to unknown error.");
+        setGeneratedImageUrl(null); // Clear any previous image on error
+      } else {
+        setGeneratedImageUrl(data.imageUrl);
+        setErrorNotification(null); // Clear any previous error on success
       }
-
-      setGeneratedImageUrl(data.imageUrl);
+      // End: Process API Response for Image Data or Error Payload
     } catch (apiError: any) {
-      setErrorNotification(apiError.message || "Network storage transmission fault.");
+      // Start: Catch Network or Client-Side Processing Errors
+      setErrorNotification(apiError.message || "Network storage transmission fault or client-side processing error.");
+      setGeneratedImageUrl(null); // Clear any previous image on network error
+      // End: Catch Network or Client-Side Processing Errors
     } finally {
       setIsGenerating(false);
     }
