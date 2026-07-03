@@ -340,6 +340,14 @@ export default function DashboardPage() {
             >
               Customer Leads Pipeline
             </a>
+            {/* Start: AI Copywriting Suite Link (Desktop) */}
+            <a
+              href="/dashboard/copywriting"
+              className="text-xs font-medium text-slate-400 hover:text-white transition-colors px-3 py-2 rounded-lg"
+            >
+              AI Copywriting Suite
+            </a>
+            {/* End: AI Copywriting Suite Link (Desktop) */}
           </div>
           {/* End: Linear/Vercel Hover Micro-Menu Architecture */}
 
