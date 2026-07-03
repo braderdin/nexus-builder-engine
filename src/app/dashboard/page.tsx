@@ -20,6 +20,7 @@ import TemplateGrid from "@/components/common/TemplateGrid";
 import { localizationDictionaries, LanguageCode } from "@/config/dictionaries";
 import AnalyticsSimulator from "@/components/common/AnalyticsSimulator";
 import DeploymentHistory from "@/components/common/DeploymentHistory";
+import CommandHub from "@/components/common/CommandHub";
 // End: External Backend and Component Dependency Imports
 
 // Start: Mock Template Architecture Definitions
@@ -135,6 +136,9 @@ export default function DashboardPage() {
   const [showDeploymentSuccessModal, setShowDeploymentSuccessModal] = useState<boolean>(false);
   const [deployedSiteUrl, setDeployedSiteUrl] = useState<string | null>(null);
 
+  // Placeholder for current storage used in bytes. In a production environment, this would be fetched securely from a backend API or storage service.
+  const [currentStorageUsedBytes, setCurrentStorageUsedBytes] = useState<number>(1.2 * 1024 * 1024); // Example: 1.2 MB
+
   useEffect(() => {
     const verifyUserSessionAndFetchData = async () => {
       setIsDataLoading(true);
@@ -148,6 +152,9 @@ export default function DashboardPage() {
 
         const { data: deploymentsData } = await getUserDeployedSites(session.user.id);
         setActiveDeployments(deploymentsData || []);
+
+        // Simulate fetching storage usage or other dynamic metrics here if applicable
+        // For now, `currentStorageUsedBytes` remains its initial placeholder value.
       }
       setIsDataLoading(false);
     };
@@ -390,6 +397,30 @@ export default function DashboardPage() {
           <StatCard title="Cloudflare R2 Storage" value="1.2 GB / 10 GB" />
           <StatCard title="AI Requests Used Today" value={`${aiRequestsUsedToday} / 5`} />
         </section>
+
+        {/* Start: Command Hub and Onboarding Ledger HUD */}
+        <CommandHub
+          userProfile={userProfile}
+          aiRequestsUsedToday={aiRequestsUsedToday}
+          activeDeployments={activeDeployments}
+          customSubdomain={customSubdomain}
+          isSubdomainValidAndAvailable={isSubdomainValidAndAvailable}
+          activePreviewJson={activePreviewJson}
+          currentStorageUsedBytes={currentStorageUsedBytes}
+        />
+        {/* End: Command Hub and Onboarding Ledger HUD */}
+
+        {/* Start: Command Hub and Onboarding Ledger HUD */}
+        <CommandHub
+          userProfile={userProfile}
+          aiRequestsUsedToday={aiRequestsUsedToday}
+          activeDeployments={activeDeployments}
+          customSubdomain={customSubdomain}
+          isSubdomainValidAndAvailable={isSubdomainValidAndAvailable}
+          activePreviewJson={activePreviewJson}
+          currentStorageUsedBytes={currentStorageUsedBytes}
+        />
+        {/* End: Command Hub and Onboarding Ledger HUD */}
 
         {/* Start: Real-Time Order Stream Panel */}
         <section className="space-y-4">
