@@ -333,6 +333,10 @@ export default function DashboardPage() {
 
   const dict = localizationDictionaries[currentLanguage];
 
+  // Derived state for AI quota enforcement based on 5 requests/day
+  // In a production environment, `aiRequestsUsedToday` would be fetched from a secure backend API.
+  const isAiQuotaExhausted = aiRequestsUsedToday >= 5;
+
   if (isDataLoading) {
     return (
       <div className="min-h-screen bg-slate-950 text-slate-400 flex justify-center items-center font-mono text-xs tracking-widest">
@@ -424,10 +428,6 @@ export default function DashboardPage() {
             onUpdateTestimonialItemClientName={handleUpdateTestimonialItemClientName}
           />
         </section>
-
-        {/* Derived state for AI quota enforcement based on 5 requests/day */}
-        {/* In a production environment, `aiRequestsUsedToday` would be fetched from a secure backend API. */}
-        const isAiQuotaExhausted = aiRequestsUsedToday >= 5;
 
         <section className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <div className="relative">
