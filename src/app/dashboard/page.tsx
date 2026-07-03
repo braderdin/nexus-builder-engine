@@ -109,7 +109,9 @@ export default function DashboardPage() {
   const [isDataLoading, setIsDataLoading] = useState<boolean>(true);
   const [selectedTemplateFilter, setSelectedTemplateFilter] = useState<string>("All");
   const [currentLanguage, setCurrentLanguage] = useState<LanguageCode>("en");
-  const [activePreviewJson, setActivePreviewJson] = useState<Record<string, any>>(PREBUILT_TEMPLATES[0].layout_data);
+  // Initialize with the first template's data for the preview and other related states
+  const initialTemplate = PREBUILT_TEMPLATES[0];
+  const [activePreviewJson, setActivePreviewJson] = useState<Record<string, any>>(initialTemplate.layout_data);
   const [isDeploying, setIsDeploying] = useState<boolean>(false);
   const [deploymentStatusMessage, setDeploymentStatusMessage] = useState<string | null>(null);
 
@@ -118,12 +120,19 @@ export default function DashboardPage() {
   const [activeDeployments, setActiveDeployments] = useState<ActiveDeploymentItem[]>([]);
   const [customSubdomain, setCustomSubdomain] = useState<string>("");
   const [isSubdomainValidAndAvailable, setIsSubdomainValidAndAvailable] = useState<boolean>(false);
-  const [selectedThemeAccent, setSelectedThemeAccent] = useState<'blue' | 'purple' | 'emerald'>('blue');
+  const [selectedThemeAccent, setSelectedThemeAccent] = useState<'blue' | 'purple' | 'emerald'>(initialTemplate.layout_data.themeAccent || 'blue');
 
-  const [isFeaturesSectionEnabled, setIsFeaturesSectionEnabled] = useState<boolean>(false);
-  const [isPortfolioSectionEnabled, setIsPortfolioSectionEnabled] = useState<boolean>(false);
-  const [isTestimonialsSectionEnabled, setIsTestimonialsSectionEnabled] = useState<boolean>(false);
+  // Blueprint Navigator and TemplateGrid controlled states
+  const [isFeaturesSectionEnabled, setIsFeaturesSectionEnabled] = useState<boolean>(!!initialTemplate.layout_data.featuresSection && initialTemplate.layout_data.featuresSection.length > 0);
+  const [isPortfolioSectionEnabled, setIsPortfolioSectionEnabled] = useState<boolean>(!!initialTemplate.layout_data.portfolioSection && initialTemplate.layout_data.portfolioSection.length > 0);
+  const [isTestimonialsSectionEnabled, setIsTestimonialsSectionEnabled] = useState<boolean>(!!initialTemplate.layout_data.testimonialsSection && initialTemplate.layout_data.testimonialsSection.length > 0);
+  const [activeTemplateId, setActiveTemplateId] = useState<string>(initialTemplate.id); // For active ring visual
+
   const [aiRequestsUsedToday, setAiRequestsUsedToday] = useState<number>(0); // Initialize for daily AI quota
+
+  // Deployment Success Modal states
+  const [showDeploymentSuccessModal, setShowDeploymentSuccessModal] = useState<boolean>(false);
+  const [deployedSiteUrl, setDeployedSiteUrl] = useState<string | null>(null);
 
   useEffect(() => {
     const verifyUserSessionAndFetchData = async () => {
@@ -143,6 +152,16 @@ export default function DashboardPage() {
     };
     verifyUserSessionAndFetchData();
   }, [router]);
+
+  // Handler for template selection from TemplateGrid
+  const handleTemplateSelect = (template: WebTemplate) => {
+    setActiveTemplateId(template.id);
+    setActivePreviewJson(template.layout_data);
+    setSelectedThemeAccent(template.layout_data.themeAccent || "blue");
+    setIsFeaturesSectionEnabled(!!template.layout_data.featuresSection && template.layout_data.featuresSection.length > 0);
+    setIsPortfolioSectionEnabled(!!template.layout_data.portfolioSection && template.layout_data.portfolioSection.length > 0);
+    setIsTestimonialsSectionEnabled(!!template.layout_data.testimonialsSection && template.layout_data.testimonialsSection.length > 0);
+  };
 
   const handleUserSignOut = async () => {
     await supabase.auth.signOut();
@@ -171,12 +190,43 @@ export default function DashboardPage() {
       },
     });
 
-    if (!error) {
-      setDeploymentStatusMessage(`Success! Active site node routed to: ${data.subdomain}.superpage.link`);
-      setCustomSubdomain("");
-      setIsSubdomainValidAndAvailable(false);
+    if (!error && data) {
+      setDeploymentStatusMessage(null); // Clear any previous error messages
+      setDeployedSiteUrl(`https://${data.subdomain}.superpage.link`);
+      setShowDeploymentSuccessModal(true);
+      setCustomSubdomain(""); // Reset subdomain input field
+      setIsSubdomainValidAndAvailable(false); // Reset subdomain validation
+    } else if (error) {
+      setDeploymentStatusMessage(`Deployment Error: ${error.message}`);
     }
     setIsDeploying(false);
+  };
+
+  // Inline component for the deployment success modal
+  const DeploymentSuccessModal = ({ siteUrl, onClose }: { siteUrl: string; onClose: () => void }) => {
+    return (
+      <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+        <div className="bg-slate-900 border border-slate-700 rounded-2xl p-8 shadow-2xl max-w-sm w-full text-center space-y-6">
+          <div className="text-emerald-400 text-5xl">✓</div>
+          <h3 className="text-xl font-bold text-white">Deployment Successful!</h3>
+          <p className="text-slate-300 text-sm">Your new merchant site node is now live.</p>
+          <a
+            href={siteUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="block w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 rounded-xl transition-colors text-sm"
+          >
+            Visit Your New Site
+          </a>
+          <button
+            onClick={onClose}
+            className="w-full text-slate-400 hover:text-white text-xs font-medium py-2 rounded-xl transition-colors"
+          >
+            Close
+          </button>
+        </div>
+      </div>
+    );
   };
 
   const dict = localizationDictionaries[currentLanguage];
@@ -289,13 +339,12 @@ export default function DashboardPage() {
           <SubdomainChecker onSubdomainChange={(sub, valid) => { setCustomSubdomain(sub); setIsSubdomainValidAndAvailable(valid); }} />
         </section>
 
-        <TemplateGrid 
+        <TemplateGrid
           templates={PREBUILT_TEMPLATES}
           selectedTemplateFilter={selectedTemplateFilter}
           setSelectedTemplateFilter={setSelectedTemplateFilter}
-          setActivePreviewJson={setActivePreviewJson}
-          setSelectedThemeAccent={setSelectedThemeAccent}
-          setIsFeaturesSectionEnabled={setIsFeaturesSectionEnabled}
+          activeTemplateId={activeTemplateId} // Pass active template ID for visual indication
+          onTemplateSelect={handleTemplateSelect} // Consolidated handler for template selection
           handleDeployBlueprintAction={handleDeployBlueprintAction}
           isDeploying={isDeploying}
           isSubdomainValidAndAvailable={isSubdomainValidAndAvailable}
@@ -304,6 +353,11 @@ export default function DashboardPage() {
         <AnalyticsSimulator layoutData={activePreviewJson} />
         <DeploymentHistory activeDeployments={activeDeployments} />
       </main>
+
+      {/* Deployment Success Overlay Module */}
+      {showDeploymentSuccessModal && deployedSiteUrl && (
+        <DeploymentSuccessModal siteUrl={deployedSiteUrl} onClose={() => setShowDeploymentSuccessModal(false)} />
+      )}
     </div>
   );
 }

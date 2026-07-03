@@ -5,22 +5,33 @@ import React, { useState } from "react";
 // Start: Component Local Type Definitions
 interface BlueprintNavigatorProps {
   activePreviewJson: Record<string, any>;
-  setActivePreviewJson: React.Dispatch<React.SetStateAction<Record<string, any>>>;
   isPortfolioSectionEnabled: boolean;
-  setIsPortfolioSectionEnabled: (val: boolean) => void;
+  onTogglePortfolioSection: (isEnabled: boolean) => void;
+  onAddPortfolioItem: (item: { id: string; title: string; description: string; imageUrl: string }) => void;
+  onRemovePortfolioItem: (id: string) => void;
+  onUpdatePortfolioItemTitle: (id: string, title: string) => void;
+
   isTestimonialsSectionEnabled: boolean;
-  setIsTestimonialsSectionEnabled: (val: boolean) => void;
+  onToggleTestimonialsSection: (isEnabled: boolean) => void;
+  onAddTestimonialItem: (item: { id: string; clientName: string; feedback: string; clientTitle: string }) => void;
+  onRemoveTestimonialItem: (id: string) => void;
+  onUpdateTestimonialItemClientName: (id: string, clientName: string) => void;
 }
 // End: Component Local Type Definitions
 
 // Start: Vercel-Style App Router Blueprint Navigator Component
 const BlueprintNavigator: React.FC<BlueprintNavigatorProps> = ({
   activePreviewJson,
-  setActivePreviewJson,
   isPortfolioSectionEnabled,
-  setIsPortfolioSectionEnabled,
+  onTogglePortfolioSection,
+  onAddPortfolioItem,
+  onRemovePortfolioItem,
+  onUpdatePortfolioItemTitle,
   isTestimonialsSectionEnabled,
-  setIsTestimonialsSectionEnabled,
+  onToggleTestimonialsSection,
+  onAddTestimonialItem,
+  onRemoveTestimonialItem,
+  onUpdateTestimonialItemClientName,
 }) => {
   const [newPortfolio, setNewPortfolio] = useState({ title: "", description: "", imageUrl: "" });
   const [newTestimonial, setNewTestimonial] = useState({ clientName: "", feedback: "", clientTitle: "" });
@@ -39,14 +50,7 @@ const BlueprintNavigator: React.FC<BlueprintNavigatorProps> = ({
               id="portfolio-toggle"
               className="sr-only peer"
               checked={isPortfolioSectionEnabled}
-              onChange={(e) => {
-                const isChecked = e.target.checked;
-                setIsPortfolioSectionEnabled(isChecked);
-                setActivePreviewJson((prev) => ({
-                  ...prev,
-                  portfolioSection: isChecked ? (prev.portfolioSection || []) : undefined,
-                }));
-              }}
+              onChange={(e) => onTogglePortfolioSection(e.target.checked)}
             />
             <div className="w-11 h-6 bg-slate-700 rounded-full peer-focus:outline-none peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
           </label>
@@ -59,19 +63,12 @@ const BlueprintNavigator: React.FC<BlueprintNavigatorProps> = ({
                 <input
                   type="text"
                   value={item.title || ""}
-                  onChange={(e) => {
-                    const updated = [...(activePreviewJson.portfolioSection || [])];
-                    updated[index] = { ...updated[index], title: e.target.value };
-                    setActivePreviewJson((prev) => ({ ...prev, portfolioSection: updated }));
-                  }}
+                  onChange={(e) => onUpdatePortfolioItemTitle(item.id, e.target.value)}
                   className="w-full bg-slate-900 border border-slate-800 rounded-lg p-2 text-xs text-white"
                   placeholder="Item Title"
                 />
                 <button
-                  onClick={() => {
-                    const updated = (activePreviewJson.portfolioSection || []).filter((_, i) => i !== index);
-                    setActivePreviewJson((prev) => ({ ...prev, portfolioSection: updated }));
-                  }}
+                  onClick={() => onRemovePortfolioItem(item.id)}
                   className="w-full bg-red-950/40 text-red-400 border border-red-900/40 py-1 rounded-lg text-[11px]"
                 >
                   Remove Item
@@ -89,10 +86,7 @@ const BlueprintNavigator: React.FC<BlueprintNavigatorProps> = ({
               <button
                 onClick={() => {
                   if (!newPortfolio.title) return;
-                  setActivePreviewJson((prev) => ({
-                    ...prev,
-                    portfolioSection: [...(prev.portfolioSection || []), { ...newPortfolio, id: `p-${Date.now()}` }],
-                  }));
+                  onAddPortfolioItem({ ...newPortfolio, id: `p-${Date.now()}` });
                   setNewPortfolio({ title: "", description: "", imageUrl: "" });
                 }}
                 className="w-full bg-blue-600 text-white py-1.5 rounded-lg text-xs font-semibold"
@@ -115,14 +109,7 @@ const BlueprintNavigator: React.FC<BlueprintNavigatorProps> = ({
               id="testimonials-toggle"
               className="sr-only peer"
               checked={isTestimonialsSectionEnabled}
-              onChange={(e) => {
-                const isChecked = e.target.checked;
-                setIsTestimonialsSectionEnabled(isChecked);
-                setActivePreviewJson((prev) => ({
-                  ...prev,
-                  testimonialsSection: isChecked ? (prev.testimonialsSection || []) : undefined,
-                }));
-              }}
+              onChange={(e) => onToggleTestimonialsSection(e.target.checked)}
             />
             <div className="w-11 h-6 bg-slate-700 rounded-full peer-focus:outline-none peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
           </label>
@@ -135,19 +122,12 @@ const BlueprintNavigator: React.FC<BlueprintNavigatorProps> = ({
                 <input
                   type="text"
                   value={item.clientName || ""}
-                  onChange={(e) => {
-                    const updated = [...(activePreviewJson.testimonialsSection || [])];
-                    updated[index] = { ...updated[index], clientName: e.target.value };
-                    setActivePreviewJson((prev) => ({ ...prev, testimonialsSection: updated }));
-                  }}
+                  onChange={(e) => onUpdateTestimonialItemClientName(item.id, e.target.value)}
                   className="w-full bg-slate-900 border border-slate-800 rounded-lg p-2 text-xs text-white"
                   placeholder="Client Name"
                 />
                 <button
-                  onClick={() => {
-                    const updated = (activePreviewJson.testimonialsSection || []).filter((_, i) => i !== index);
-                    setActivePreviewJson((prev) => ({ ...prev, testimonialsSection: updated }));
-                  }}
+                  onClick={() => onRemoveTestimonialItem(item.id)}
                   className="w-full bg-red-950/40 text-red-400 border border-red-900/40 py-1 rounded-lg text-[11px]"
                 >
                   Remove Testimonial
@@ -159,16 +139,13 @@ const BlueprintNavigator: React.FC<BlueprintNavigatorProps> = ({
                 type="text"
                 placeholder="Client Name"
                 value={newTestimonial.clientName}
-                onChange={(e) => setNewTestimonial((t) => ({ ...p, clientName: e.target.value }))}
+                onChange={(e) => setNewTestimonial((t) => ({ ...t, clientName: e.target.value }))}
                 className="w-full bg-slate-900 border border-slate-800 rounded-lg p-2 text-xs text-white"
               />
               <button
                 onClick={() => {
                   if (!newTestimonial.clientName) return;
-                  setActivePreviewJson((prev) => ({
-                    ...prev,
-                    testimonialsSection: [...(prev.testimonialsSection || []), { ...newTestimonial, id: `t-${Date.now()}` }],
-                  }));
+                  onAddTestimonialItem({ ...newTestimonial, id: `t-${Date.now()}` });
                   setNewTestimonial({ clientName: "", feedback: "", clientTitle: "" });
                 }}
                 className="w-full bg-blue-600 text-white py-1.5 rounded-lg text-xs font-semibold"

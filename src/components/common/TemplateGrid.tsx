@@ -10,16 +10,20 @@ interface WebTemplate {
   description: string;
   features: string[];
   isPremium: boolean;
-  layout_data: Record<string, any>;
+  layout_data: Record<string, any> & {
+    themeAccent?: 'blue' | 'purple' | 'emerald';
+    featuresSection?: Array<{ title: string; description: string; }>;
+    portfolioSection?: Array<{ id: string; title: string; description: string; imageUrl: string; }>;
+    testimonialsSection?: Array<{ id: string; clientName: string; feedback: string; clientTitle: string; }>;
+  };
 }
 
 interface TemplateGridProps {
   templates: WebTemplate[];
   selectedTemplateFilter: string;
   setSelectedTemplateFilter: (val: string) => void;
-  setActivePreviewJson: (layout: Record<string, any>) => void;
-  setSelectedThemeAccent: (accent: "blue" | "purple" | "emerald") => void;
-  setIsFeaturesSectionEnabled: (val: boolean) => void;
+  activeTemplateId: string | null; // ID of the currently active template for visual feedback
+  onTemplateSelect: (template: WebTemplate) => void; // Consolidated handler for template selection
   handleDeployBlueprintAction: (template: WebTemplate) => void;
   isDeploying: boolean;
   isSubdomainValidAndAvailable: boolean;
@@ -31,9 +35,8 @@ const TemplateGrid: React.FC<TemplateGridProps> = ({
   templates,
   selectedTemplateFilter,
   setSelectedTemplateFilter,
-  setActivePreviewJson,
-  setSelectedThemeAccent,
-  setIsFeaturesSectionEnabled,
+  activeTemplateId,
+  onTemplateSelect,
   handleDeployBlueprintAction,
   isDeploying,
   isSubdomainValidAndAvailable,
@@ -64,14 +67,9 @@ const TemplateGrid: React.FC<TemplateGridProps> = ({
         {templates.map((template) => (
           <div
             key={template.id}
-            onClick={() => {
-              if (template.layout_data) {
-                setActivePreviewJson(template.layout_data);
-                setSelectedThemeAccent(template.layout_data.themeAccent || "blue");
-                setIsFeaturesSectionEnabled(!!template.layout_data.featuresSection && template.layout_data.featuresSection.length > 0);
-              }
-            }}
-            className="bg-slate-900 border border-slate-800 rounded-2xl p-5 sm:p-6 flex flex-col justify-between hover:border-blue-500 cursor-pointer transition-all group relative overflow-hidden shadow-xl"
+            onClick={() => onTemplateSelect(template)} // Use the consolidated handler
+            className={`bg-slate-900 border border-slate-800 rounded-2xl p-5 sm:p-6 flex flex-col justify-between hover:border-blue-500 cursor-pointer transition-all group relative overflow-hidden shadow-xl
+              ${activeTemplateId === template.id ? "ring-2 ring-blue-600 ring-offset-2 ring-offset-slate-950" : ""}`}
           >
             <div>
               <div className="flex justify-between items-start mb-4">
@@ -97,7 +95,7 @@ const TemplateGrid: React.FC<TemplateGridProps> = ({
                   e.stopPropagation();
                   handleDeployBlueprintAction(template);
                 }}
-                className="w-full font-semibold text-xs py-3 rounded-xl bg-slate-950 hover:bg-slate-800 border border-slate-800 text-white transition-all"
+                className="w-full font-semibold text-xs py-3 rounded-xl bg-blue-600 hover:bg-blue-700 text-white transition-all disabled:bg-slate-700 disabled:text-slate-400 disabled:cursor-not-allowed"
                 disabled={isDeploying || !isSubdomainValidAndAvailable}
               >
                 {isDeploying ? "Deploying Node..." : "Deploy Blueprint"}
