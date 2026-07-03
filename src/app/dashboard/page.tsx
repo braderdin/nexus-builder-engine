@@ -21,6 +21,7 @@ import { localizationDictionaries, LanguageCode } from "@/config/dictionaries";
 import AnalyticsSimulator from "@/components/common/AnalyticsSimulator";
 import DeploymentHistory from "@/components/common/DeploymentHistory";
 import CommandHub from "@/components/common/CommandHub";
+import ComponentLibrary from "@/components/common/ComponentLibrary"; // New import for ComponentLibrary
 // End: External Backend and Component Dependency Imports
 
 // Start: Mock Template Architecture Definitions
@@ -437,6 +438,13 @@ export default function DashboardPage() {
             onNewOrder={(newOrder) => setCustomerOrders((prev) => [newOrder, ...prev])}
           />
         </section>
+
+        {/* Start: Component Library Workspace Box */}
+        <ComponentLibrary
+          activePreviewJson={activePreviewJson}
+          setActivePreviewJson={setActivePreviewJson}
+        />
+        {/* End: Component Library Workspace Box */}
 
         {/* Start: Split Sub-Components Configurations UI */}
         <section className="grid grid-cols-1 lg:grid-cols-2 gap-6">
