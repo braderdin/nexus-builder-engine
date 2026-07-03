@@ -16,7 +16,7 @@ export const redisCacheClient = new Redis({
  */
 export const aiRateLimiterGuard = new Ratelimit({
   redis: redisCacheClient,
-  limiter: Ratelimit.slidingWindow(5, "60 s"),
+  limiter: Ratelimit.fixedWindow(5, "1 d"),
   analytics: true,
   prefix: "@nexus/ratelimit",
 });

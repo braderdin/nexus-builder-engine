@@ -123,6 +123,7 @@ export default function DashboardPage() {
   const [isFeaturesSectionEnabled, setIsFeaturesSectionEnabled] = useState<boolean>(false);
   const [isPortfolioSectionEnabled, setIsPortfolioSectionEnabled] = useState<boolean>(false);
   const [isTestimonialsSectionEnabled, setIsTestimonialsSectionEnabled] = useState<boolean>(false);
+  const [aiRequestsUsedToday, setAiRequestsUsedToday] = useState<number>(0); // Initialize for daily AI quota
 
   useEffect(() => {
     const verifyUserSessionAndFetchData = async () => {
@@ -215,7 +216,7 @@ export default function DashboardPage() {
         <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           <StatCard title="Total Active Sites" value={totalActiveSitesCount !== null ? String(totalActiveSitesCount) : "0"} />
           <StatCard title="Cloudflare R2 Storage" value="1.2 GB / 10 GB" />
-          <StatCard title="AI Tokens Used" value="45,200 tokens" />
+          <StatCard title="AI Requests Used Today" value={`${aiRequestsUsedToday} / 5`} />
         </section>
 
         {/* Start: Real-Time Order Stream Panel */}
@@ -261,9 +262,27 @@ export default function DashboardPage() {
           />
         </section>
 
+        {/* Derived state for AI quota enforcement based on 5 requests/day */}
+        {/* In a production environment, `aiRequestsUsedToday` would be fetched from a secure backend API. */}
+        const isAiQuotaExhausted = aiRequestsUsedToday >= 5;
+
         <section className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <ImageGenerator currentUserEmail={userProfile?.email || ""} />
-          <SelfHealingEngine currentUserEmail={userProfile?.email || ""} onRepairedJsonInject={setActivePreviewJson} />
+          <div className="relative">
+            {isAiQuotaExhausted && (
+                <div className="absolute inset-0 flex items-center justify-center bg-yellow-900/70 backdrop-blur-sm z-10 rounded-2xl p-4 text-center">
+                    <p className="text-sm font-semibold text-yellow-300">Daily AI Quota Exhausted. Resets in 24 hours.</p>
+                </div>
+            )}
+            <ImageGenerator currentUserEmail={userProfile?.email || ""} />
+          </div>
+          <div className="relative">
+            {isAiQuotaExhausted && (
+                <div className="absolute inset-0 flex items-center justify-center bg-yellow-900/70 backdrop-blur-sm z-10 rounded-2xl p-4 text-center">
+                    <p className="text-sm font-semibold text-yellow-300">Daily AI Quota Exhausted. Resets in 24 hours.</p>
+                </div>
+            )}
+            <SelfHealingEngine currentUserEmail={userProfile?.email || ""} onRepairedJsonInject={setActivePreviewJson} />
+          </div>
         </section>
 
         <section className="bg-slate-900 border border-slate-800 p-6 rounded-2xl">
