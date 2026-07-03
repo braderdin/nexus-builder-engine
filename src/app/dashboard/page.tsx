@@ -348,6 +348,15 @@ export default function DashboardPage() {
               AI Copywriting Suite
             </a>
             {/* End: AI Copywriting Suite Link (Desktop) */}
+
+            {/* Start: Billing & Invoices Link (Desktop) */}
+            <a
+              href="/dashboard/billing"
+              className="text-xs font-medium text-slate-400 hover:text-white transition-colors px-3 py-2 rounded-lg"
+            >
+              Billing & Invoices
+            </a>
+            {/* End: Billing & Invoices Link (Desktop) */}
           </div>
           {/* End: Linear/Vercel Hover Micro-Menu Architecture */}
 
