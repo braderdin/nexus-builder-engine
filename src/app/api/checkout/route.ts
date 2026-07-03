@@ -3,15 +3,15 @@ import Stripe from "stripe";
 
 // Start: Stripe API Initialization (Ensure STRIPE_SECRET_KEY is set in your .env.local)
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || "", {
-  apiVersion: "2023-10-16", // Use your desired Stripe API version
+  apiVersion: "2026-06-24.dahlia", // Start: Pin to current strict version type
 });
 // End: Stripe API Initialization
 
 // Start: Request Payload Type Definition
 interface CheckoutPayload {
-  userId: string; // The unique ID of the user from your database
+  userId: string;
   userEmail: string;
-  priceId: string; // The ID of the Stripe Price object for the product/subscription
+  priceId: string;
 }
 // End: Request Payload Type Definition
 
@@ -20,7 +20,6 @@ export async function POST(request: NextRequest) {
   try {
     // Start: Dynamic Payload Context Extraction and Validation
     const { userId, userEmail, priceId }: CheckoutPayload = await request.json();
-
     if (
       !userId || typeof userId !== "string" ||
       !userEmail || typeof userEmail !== "string" ||
@@ -42,18 +41,18 @@ export async function POST(request: NextRequest) {
     // Start: Create Secure Stripe Checkout Session Payload
     const session = await stripe.checkout.sessions.create({
       payment_method_types: ["card"],
-      mode: "subscription", // Assuming 'Premium Pro' is a subscription
+      mode: "subscription",
       line_items: [
         {
           price: priceId,
           quantity: 1,
         },
       ],
-      customer_email: userEmail, // Pre-fill customer email in Stripe checkout
+      customer_email: userEmail,
       success_url: successUrl,
       cancel_url: cancelUrl,
       metadata: {
-        user_id: userId, // Explicitly map user ID for webhook handling
+        user_id: userId,
         priceId: priceId,
       },
     });
@@ -62,7 +61,6 @@ export async function POST(request: NextRequest) {
     // Start: Return Stripe Checkout Session URL for Client-side Redirection
     return NextResponse.json({ sessionId: session.id, url: session.url }, { status: 200 });
     // End: Return Stripe Checkout Session URL for Client-side Redirection
-
   } catch (error: any) {
     // Start: Defensive Error Catching Block
     console.error("Stripe Checkout Session Creation Fault:", error);
