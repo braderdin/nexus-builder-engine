@@ -78,6 +78,20 @@ const PREBUILT_TEMPLATES: WebTemplate[] = [
 ];
 // End: Mock Template Architecture Definitions
 
+// Start: Component Local Type Definitions
+interface StatCardProps {
+  title: string;
+  value: string;
+}
+
+const StatCard: React.FC<StatCardProps> = ({ title, value }) => (
+  <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl flex flex-col justify-between">
+    <h4 className="text-sm font-medium text-slate-400 mb-2">{title}</h4>
+    <p className="text-2xl sm:text-3xl font-extrabold text-white">{value}</p>
+  </div>
+);
+// End: Component Local Type Definitions
+
 // Start: Merchant Workspace Dashboard Component
 export default function DashboardPage() {
   const router = useRouter();
@@ -248,9 +262,13 @@ export default function DashboardPage() {
       {/* End: Top Navigation Layout */}
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 py-6 sm:py-10 space-y-10">
-        <div>
-          <h2 className="text-xl sm:text-2xl font-extrabold text-white tracking-tight">{dict.welcomeHeader}</h2>
-          <p className="text-xs sm:text-sm text-slate-400 leading-relaxed max-w-3xl">{dict.welcomeSub}</p>
+        <div className="mb-8">
+          <h2 className="text-xl sm:text-2xl font-extrabold text-white tracking-tight">
+            {dict.navBrand} {dict.welcomeHeader}
+          </h2>
+          <p className="text-xs sm:text-sm text-slate-400 leading-relaxed max-w-3xl">
+            {dict.welcomeSub} <span className="font-medium text-slate-300">{userProfile?.email}</span>
+          </p>
         </div>
 
         {deploymentStatusMessage && (
@@ -263,20 +281,34 @@ export default function DashboardPage() {
           </div>
         )}
 
-        <div className="space-y-4">
-          <h3 className="text-xs font-bold uppercase tracking-widest text-slate-500">Live Visual Blueprint Parser</h3>
-          <DynamicRenderer layoutData={activePreviewJson} />
-        </div>
+        {/* Start: Stats Summary Cards */}
+        <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <StatCard title="Total Active Sites" value="12" />
+          <StatCard title="Cloudflare R2 Storage" value="1.2 GB / 10 GB" />
+          <StatCard title="AI Tokens Used" value="45,200 tokens" />
+        </section>
+        {/* End: Stats Summary Cards */}
 
-        <div className="space-y-4">
-          <h3 className="text-xs font-bold uppercase tracking-widest text-slate-500">Nexus Media Creative Suite</h3>
-          <ImageGenerator currentUserEmail={userProfile?.email || ""} />
-        </div>
+        {/* Start: Workspace Tools Section */}
+        <div className="space-y-6">
+          <h3 className="text-xs font-bold uppercase tracking-widest text-slate-500">Workspace Tools</h3>
+          
+          <div className="space-y-4 mt-4"> {/* Added mt-4 for spacing from header */}
+            <h4 className="text-sm font-semibold text-slate-300">Live Visual Blueprint Parser</h4>
+            <DynamicRenderer layoutData={activePreviewJson} />
+          </div>
 
-        <div className="space-y-4">
-          <h3 className="text-xs font-bold uppercase tracking-widest text-slate-500">{dict.aiConsoleTitle}</h3>
-          <AiConsole currentUserEmail={userProfile?.email || ""} />
+          <div className="space-y-4">
+            <h4 className="text-sm font-semibold text-slate-300">Nexus Media Creative Suite</h4>
+            <ImageGenerator currentUserEmail={userProfile?.email || ""} />
+          </div>
+
+          <div className="space-y-4">
+            <h4 className="text-sm font-semibold text-slate-300">{dict.aiConsoleTitle}</h4>
+            <AiConsole currentUserEmail={userProfile?.email || ""} />
+          </div>
         </div>
+        {/* End: Workspace Tools Section */}
 
         <div className="space-y-6">
           <div className="flex flex-col lg:flex-row lg:justify-between lg:items-center gap-4 border-b border-slate-900 pb-4">
