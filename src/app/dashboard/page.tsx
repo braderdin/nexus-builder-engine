@@ -26,9 +26,11 @@ interface WebTemplate {
   description: string;
   features: string[];
   isPremium: boolean;
-  layout_data: Record<string, any> & { 
+  layout_data: Record<string, any> & {
     themeAccent?: 'blue' | 'purple' | 'emerald';
-    featuresSection?: Array<{ title: string; description: string; }>; // New: Optional features section
+    featuresSection?: Array<{ title: string; description: string; }>;
+    portfolioSection?: Array<{ id: string; title: string; description: string; imageUrl: string; }>; // New: Optional portfolio section
+    testimonialsSection?: Array<{ id: string; clientName: string; feedback: string; clientTitle: string; }>; // New: Optional testimonials section
   };
 }
 
@@ -97,7 +99,15 @@ const PREBUILT_TEMPLATES: WebTemplate[] = [
     features: ["AI Copywriting Generator", "Unlimited Dynamic Sections", "Ad-Free Ecosystem Access"],
     isPremium: true,
     layout_data: {
-      themeAccent: "purple" // Default for premium template
+      themeAccent: "purple", // Default for premium template
+      portfolioSection: [ // Example portfolio items
+        { id: "p1", title: "Project Nexus", description: "Revolutionizing AI-driven web development.", imageUrl: "https://images.unsplash.com/photo-1516321497487-e2887aeec204?q=80&w=2940&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D" },
+        { id: "p2", title: "Quantum Sync", description: "Seamless data integration for enterprises.", imageUrl: "https://images.unsplash.com/photo-1507238691740-b52b2cefe19f?q=80&w=2750&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D" },
+      ],
+      testimonialsSection: [ // Example testimonials
+        { id: "t1", clientName: "Alice Smith", feedback: "Nexus transformed our online presence!", clientTitle: "CEO, Tech Solutions" },
+        { id: "t2", clientName: "Bob Johnson", feedback: "Unparalleled support and cutting-edge features.", clientTitle: "Founder, Innovate Co." },
+      ],
     }
   },
 ];
@@ -150,8 +160,20 @@ export default function DashboardPage() {
   const [selectedThemeAccent, setSelectedThemeAccent] = useState<'blue' | 'purple' | 'emerald'>('blue');
   // End: New State Variable for Theme Accent
 
+  // Start: New State Variables for Dynamic Section Matrix Block Injector (for new tabs)
+  const [isFeaturesSectionEnabled, setIsFeaturesSectionEnabled] = useState<boolean>(false); // Existing
+  const [isPortfolioSectionEnabled, setIsPortfolioSectionEnabled] = useState<boolean>(false); // New: Portfolio Section Toggle
+  const [newPortfolioItem, setNewPortfolioItem] = useState<{ title: string; description: string; imageUrl: string; }>({ title: '', description: '', imageUrl: '' }); // New: For adding new portfolio items
+  const [isTestimonialsSectionEnabled, setIsTestimonialsSectionEnabled] = useState<boolean>(false); // New: Testimonials Section Toggle
+  const [newTestimonialItem, setNewTestimonialItem] = useState<{ clientName: string; feedback: string; clientTitle: string; }>({ clientName: '', feedback: '', clientTitle: '' }); // New: For adding new testimonial items
+  // End: New State Variables for Dynamic Section Matrix Block Injector (for new tabs)
+
   useEffect(() => {
     // Start: User Session Verification and Data Fetching Lifecycle
+    // Ensure initial state for dynamic sections is correctly set based on activePreviewJson
+    setIsFeaturesSectionEnabled(!!activePreviewJson.featuresSection && activePreviewJson.featuresSection.length > 0);
+    setIsPortfolioSectionEnabled(!!activePreviewJson.portfolioSection && activePreviewJson.portfolioSection.length > 0);
+    setIsTestimonialsSectionEnabled(!!activePreviewJson.testimonialsSection && activePreviewJson.testimonialsSection.length > 0);
     const verifyUserSessionAndFetchData = async () => {
       setIsDataLoading(true); // Ensure loading state is true while fetching everything
       const { data: { session }, error } = await supabase.auth.getSession();
@@ -214,6 +236,8 @@ export default function DashboardPage() {
         ...activePreviewJson, // Use the live-edited activePreviewJson for all dynamic content
         themeAccent: selectedThemeAccent, // Ensure themeAccent is always the selected one
         featuresSection: isFeaturesSectionEnabled ? activePreviewJson.featuresSection : undefined, // Conditionally include/exclude
+        portfolioSection: isPortfolioSectionEnabled ? activePreviewJson.portfolioSection : undefined, // Conditionally include/exclude portfolio
+        testimonialsSection: isTestimonialsSectionEnabled ? activePreviewJson.testimonialsSection : undefined, // Conditionally include/exclude testimonials
       },
     });
 
