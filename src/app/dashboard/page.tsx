@@ -382,6 +382,7 @@ export default function DashboardPage() {
             <a href="/dashboard/copywriting" className="text-xs text-slate-400 hover:text-white transition-colors">AI Copywriting</a>
             <a href="/dashboard/billing" className="text-xs text-slate-400 hover:text-white transition-colors">Billing Hub</a>
             <a href="/dashboard/diagnostics" className="text-xs text-slate-400 hover:text-white transition-colors">Diagnostics</a>
+            <a href="/dashboard/tutorial" className="text-xs text-blue-400 hover:text-blue-300 transition-colors">Official Tutorial Guide</a> {/* New: Tutorial Link */}
           </div>
         </div>
         <button onClick={handleUserSignOut} className="text-xs bg-slate-950 hover:bg-slate-800 border border-slate-800 text-slate-300 font-semibold px-4 py-2 rounded-xl transition-colors">
