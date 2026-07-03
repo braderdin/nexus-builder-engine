@@ -2,7 +2,7 @@ import { z } from "zod";
 
 // Start: Global Storage Restriction Constants
 const MAX_FILE_SIZE_BYTES = 2 * 1024 * 1024; // Strict limit: 2MB Maximum Individual File Size
-const MAX_TOTAL_STORAGE_BYTES = 25 * 1024 * 1024; // Strict limit: 25MB Maximum Total Storage Allocation
+export const MAX_TOTAL_STORAGE_BYTES = 25 * 1024 * 1024; // Strict limit: 25MB Maximum Total Storage Allocation
 const ALLOWED_IMAGE_TYPES = ["image/jpeg", "image/png", "image/webp", "image/svg+xml"];
 const FORBIDDEN_EXTENSIONS = [".exe", ".bat", ".sh", ".cmd", ".msi", ".zip", ".rar", ".mp3", ".mp4"];
 // End: Global Storage Restriction Constants

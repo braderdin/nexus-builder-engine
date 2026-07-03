@@ -129,15 +129,13 @@ export default function DashboardPage() {
   const [isPortfolioSectionEnabled, setIsPortfolioSectionEnabled] = useState<boolean>(!!initialTemplate.layout_data.portfolioSection && initialTemplate.layout_data.portfolioSection.length > 0);
   const [isTestimonialsSectionEnabled, setIsTestimonialsSectionEnabled] = useState<boolean>(!!initialTemplate.layout_data.testimonialsSection && initialTemplate.layout_data.testimonialsSection.length > 0);
   const [activeTemplateId, setActiveTemplateId] = useState<string>(initialTemplate.id); // For active ring visual
+  const [currentStorageUsedBytes, setCurrentStorageUsedBytes] = useState<number>(12582912); // Initialize storage with 12MB (12 * 1024 * 1024)
 
   const [aiRequestsUsedToday, setAiRequestsUsedToday] = useState<number>(0); // Initialize for daily AI quota
 
   // Deployment Success Modal states
   const [showDeploymentSuccessModal, setShowDeploymentSuccessModal] = useState<boolean>(false);
   const [deployedSiteUrl, setDeployedSiteUrl] = useState<string | null>(null);
-
-  // Placeholder for current storage used in bytes. In a production environment, this would be fetched securely from a backend API or storage service.
-  const [currentStorageUsedBytes, setCurrentStorageUsedBytes] = useState<number>(1.2 * 1024 * 1024); // Example: 1.2 MB
 
   useEffect(() => {
     const verifyUserSessionAndFetchData = async () => {
@@ -397,18 +395,6 @@ export default function DashboardPage() {
           <StatCard title="Cloudflare R2 Storage" value="1.2 GB / 10 GB" />
           <StatCard title="AI Requests Used Today" value={`${aiRequestsUsedToday} / 5`} />
         </section>
-
-        {/* Start: Command Hub and Onboarding Ledger HUD */}
-        <CommandHub
-          userProfile={userProfile}
-          aiRequestsUsedToday={aiRequestsUsedToday}
-          activeDeployments={activeDeployments}
-          customSubdomain={customSubdomain}
-          isSubdomainValidAndAvailable={isSubdomainValidAndAvailable}
-          activePreviewJson={activePreviewJson}
-          currentStorageUsedBytes={currentStorageUsedBytes}
-        />
-        {/* End: Command Hub and Onboarding Ledger HUD */}
 
         {/* Start: Command Hub and Onboarding Ledger HUD */}
         <CommandHub
