@@ -37,6 +37,15 @@ interface DynamicRendererProps {
     portfolioSection?: Array<{ id: string; title: string; description: string; imageUrl: string; }>;
     testimonialsSection?: Array<{ id: string; clientName: string; feedback: string; clientTitle: string; }>;
     products?: ProductItem[]; // New: Products for order simulator
+    customHtmlSection?: { id: string; content: string; }; // New: Custom HTML/CSS/JS injected from sandbox
+    customLayoutSections?: Array<{ // New: Custom layout structures injected from palette
+      id: string;
+      type: string; // e.g., "multiColumnText", "featureCardGrid"
+      columnCount?: number; // For multiColumnText
+      columns?: Array<{ title: string; content: string }>; // For multiColumnText
+      items?: Array<{ id: string; title: string; description: string; icon?: string }>; // For featureCardGrid
+      [key: string]: any; // Allows for flexible future properties
+    }>;
   };
   onNewOrder: (order: CustomerOrder) => void; // Callback to push new orders to parent state
 }
@@ -74,6 +83,8 @@ export default function DynamicRenderer({ layoutData, onNewOrder }: DynamicRende
   const portfolio = layoutData?.portfolioSection;
   const testimonials = layoutData?.testimonialsSection;
   const products = layoutData?.products || []; // Products for the order simulator
+  const customHtml = layoutData?.customHtmlSection; // Custom HTML/CSS/JS content
+  const customLayouts = layoutData?.customLayoutSections; // Custom structural layouts
 
   // Start: Order Simulator State
   const [simulatorClientName, setSimulatorClientName] = useState<string>('');
@@ -284,6 +295,66 @@ export default function DynamicRenderer({ layoutData, onNewOrder }: DynamicRende
             </section>
           )}
           {/* End: Interactive Customer Order Simulator Form */}
+
+          {/* Start: Dynamic Parsed Custom HTML/CSS/JS Section */}
+          {customHtml && (
+            <section className="p-6 sm:p-10 border-t border-slate-900 bg-slate-900/10">
+              <div className="max-w-6xl mx-auto bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl">
+                <h3 className="text-sm sm:text-base font-bold text-white tracking-tight mb-4">
+                  Custom Injected Content
+                </h3>
+                {/* DANGER: dangerouslySetInnerHTML is used here to render user-provided HTML.
+                    The input is sanitized in ComponentLibrary.tsx before being passed here
+                    to mitigate XSS risks. Exercise extreme caution with this feature. */}
+                <div 
+                  className="prose prose-invert text-slate-300 text-xs sm:text-sm" // Tailwind Prose for basic styling
+                  dangerouslySetInnerHTML={{ __html: customHtml.content }}
+                />
+              </div>
+            </section>
+          )}
+          {/* End: Dynamic Parsed Custom HTML/CSS/JS Section */}
+
+          {/* Start: Dynamic Parsed Custom Layout Sections */}
+          {customLayouts && customLayouts.length > 0 && (
+            <section className="px-6 py-12 sm:py-20 bg-slate-900/10 border-t border-slate-900">
+              <div className="max-w-6xl mx-auto space-y-8">
+                <h2 className="text-xl sm:text-2xl font-extrabold text-white text-center">Custom Layouts</h2>
+                {customLayouts.map((layout) => (
+                  <div key={layout.id} className="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl">
+                    {/* Render Multi-Column Text Layout */}
+                    {layout.type === "multiColumnText" && layout.columns && (
+                      <div className={`grid grid-cols-1 md:grid-cols-${layout.columnCount || 2} gap-6`}>
+                        {layout.columns.map((col, idx) => (
+                          <div key={idx} className="space-y-2">
+                            <h3 className="text-lg font-bold text-white">{col.title}</h3>
+                            {/* DANGER: dangerouslySetInnerHTML used for user-provided layout content.
+                                Ensure sanitization happens at input stage (ComponentLibrary.tsx). */}
+                            <div className="text-sm text-slate-400 leading-relaxed prose prose-invert" dangerouslySetInnerHTML={{ __html: col.content }} />
+                          </div>
+                        ))}
+                      </div>
+                    )}
+
+                    {/* Render Feature Card Grid Layout */}
+                    {layout.type === "featureCardGrid" && layout.items && (
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        {layout.items.map((item) => (
+                          <div key={item.id} className="bg-slate-800 border border-slate-700 rounded-xl p-4 shadow-lg text-center space-y-3">
+                            {item.icon && <div className="text-3xl mb-2">{item.icon}</div>}
+                            <h3 className="text-md font-semibold text-white">{item.title}</h3>
+                            <p className="text-slate-400 text-sm">{item.description}</p>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                    {/* Add more custom layout types here as needed */}
+                  </div>
+                ))}
+              </div>
+            </section>
+          )}
+          {/* End: Dynamic Parsed Custom Layout Sections */}
         </>
       )}
       {/* End: Home Tab Content */}

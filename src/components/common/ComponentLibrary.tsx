@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
+import { sanitizeUserTextInput } from "@/lib/validations/fileUpload"; // Import the sanitization utility
 
 // Start: Component Local Type Definitions
 interface ComponentLibraryProps {
@@ -16,11 +17,26 @@ interface LibraryComponent {
   snippet: string; // Raw HTML/CSS/JS snippet to display
   injectLogic: (currentJson: Record<string, any>) => Record<string, any>; // Function to merge/add data to activePreviewJson
 }
+
+interface LibraryLayout {
+  id: string;
+  name: string;
+  description: string;
+  // Optional render function for layout-specific configuration options (e.g., column count)
+  configOptionsRender?: (config: { numColumns: number; setNumColumns: React.Dispatch<React.SetStateAction<number>> }) => React.ReactNode;
+  preview: React.ReactNode; // For the live rendering window
+  // Function to merge/add layout data to activePreviewJson, accepting dynamic config
+  injectLogic: (currentJson: Record<string, any>, config: Record<string, any>) => Record<string, any>;
+}
 // End: Component Local Type Definitions
 
 // Start: ComponentLibrary Module
 const ComponentLibrary: React.FC<ComponentLibraryProps> = ({ activePreviewJson, setActivePreviewJson }) => {
   const [expandedSnippet, setExpandedSnippet] = useState<string | null>(null);
+  const [customHtmlInput, setCustomHtmlInput] = useState<string>(""); // State for custom HTML input
+
+  // State for dynamic layout configurations (e.g., number of columns for multi-column layout)
+  const [numColumnsForLayout, setNumColumnsForLayout] = useState<number>(2);
 
   /**
    * Handles injecting a selected component's data into the active preview JSON.
@@ -32,7 +48,24 @@ const ComponentLibrary: React.FC<ComponentLibraryProps> = ({ activePreviewJson, 
     alert("Component injected! Please observe changes in your live preview canvas."); // User feedback for successful injection
   };
 
-  // Define the collection of library components
+  /**
+   * Handles injecting custom HTML/CSS/JS from the sandbox deck into the active preview JSON.
+   * The input is sanitized before injection to prevent XSS vulnerabilities.
+   */
+  const handleCustomHtmlInject = () => {
+    const sanitizedHtml = sanitizeUserTextInput(customHtmlInput); // Sanitize the raw input
+    setActivePreviewJson((prevJson) => ({
+      ...prevJson,
+      customHtmlSection: {
+        id: `custom-html-${Date.now()}`,
+        content: sanitizedHtml,
+      },
+    }));
+    alert("Custom HTML/CSS/JS injected! Check the live preview."); // User feedback for successful injection
+    setCustomHtmlInput(""); // Clear the input field after injection
+  };
+
+  // Define the collection of pre-built UI components
   const libraryComponents: LibraryComponent[] = [
     {
       id: "cta-button-glowing",
@@ -122,6 +155,83 @@ const ComponentLibrary: React.FC<ComponentLibraryProps> = ({ activePreviewJson, 
     },
   ];
 
+  // Define the collection of interactive layout components
+  const layoutLibrary: LibraryLayout[] = [
+    {
+      id: "layout-multi-column-text",
+      name: "Multi-Column Text Block",
+      description: "A flexible layout for presenting content in multiple columns, ideal for comparisons or dual narratives.",
+      configOptionsRender: ({ numColumns, setNumColumns }) => (
+        <div className="flex items-center gap-2">
+          <label htmlFor="layout-num-cols" className="text-xs text-slate-400">Columns:</label>
+          <select
+            id="layout-num-cols"
+            className="bg-slate-800 border border-slate-700 rounded-md px-2 py-1 text-xs text-white"
+            value={numColumns}
+            onChange={(e) => setNumColumns(parseInt(e.target.value, 10))}
+          >
+            <option value={1}>1</option>
+            <option value={2}>2</option>
+            <option value={3}>3</option>
+            <option value={4}>4</option>
+          </select>
+        </div>
+      ),
+      preview: (
+        <div className="grid grid-cols-2 gap-4 text-xs text-slate-400">
+          <div className="bg-slate-700/50 p-3 rounded-md min-h-[60px]">Text Column 1</div>
+          <div className="bg-slate-700/50 p-3 rounded-md min-h-[60px]">Text Column 2</div>
+        </div>
+      ),
+      injectLogic: (currentJson, config) => {
+        const actualNumColumns = config?.numColumns || 2;
+        const columns = Array.from({ length: actualNumColumns }).map((_, i) => ({
+          title: sanitizeUserTextInput(`Column ${i + 1} Headline`),
+          content: sanitizeUserTextInput(`This is the content for column ${i + 1}. You can edit it using the content configurator or direct blueprint editor.`)
+        }));
+        return {
+          ...currentJson,
+          // Append to customLayoutSections array
+          customLayoutSections: [...((currentJson.customLayoutSections as Array<any>) || []), {
+            id: `layout-mc-${Date.now()}`,
+            type: "multiColumnText", // Identifier for DynamicRenderer
+            columns: columns,
+            columnCount: actualNumColumns,
+          }],
+        };
+      },
+    },
+    {
+      id: "layout-feature-card-grid",
+      name: "Three-Card Feature Grid",
+      description: "Visually appealing grid to highlight three key features or offerings.",
+      preview: (
+        <div className="grid grid-cols-3 gap-3 text-xs text-slate-400">
+          <div className="bg-slate-700/50 p-2 rounded-md min-h-[50px] text-center">Card 1</div>
+          <div className="bg-slate-700/50 p-2 rounded-md min-h-[50px] text-center">Card 2</div>
+          <div className="bg-slate-700/50 p-2 rounded-md min-h-[50px] text-center">Card 3</div>
+        </div>
+      ),
+      injectLogic: (currentJson) => {
+        const items = Array.from({ length: 3 }).map((_, i) => ({
+          id: `card-${Date.now()}-${i}`,
+          title: sanitizeUserTextInput(`Feature ${i + 1}`),
+          description: sanitizeUserTextInput(`Short description for feature ${i + 1}. This content can be edited.`),
+          icon: (i === 0 ? "💡" : i === 1 ? "🚀" : "✨") // Placeholder icon
+        }));
+        return {
+          ...currentJson,
+          // Append to customLayoutSections array
+          customLayoutSections: [...((currentJson.customLayoutSections as Array<any>) || []), {
+            id: `layout-fc-${Date.now()}`,
+            type: "featureCardGrid", // Identifier for DynamicRenderer
+            items: items,
+          }],
+        };
+      },
+    },
+  ];
+
   return (
     <section className="space-y-4">
       <h3 className="text-xs font-bold uppercase tracking-widest text-slate-500">Component Library & Live Sandbox</h3>
@@ -161,6 +271,55 @@ const ComponentLibrary: React.FC<ComponentLibraryProps> = ({ activePreviewJson, 
           </div>
         ))}
       </div>
+
+      {/* Start: Custom HTML/CSS/JS Custom Sandbox Deck */}
+      <div className="space-y-4 pt-6 border-t border-slate-800 mt-6">
+        <h5 className="text-lg font-bold text-white">Custom HTML/CSS/JS Sandbox Deck</h5>
+        <p className="text-slate-400 text-sm">Inject your own raw HTML, CSS, or JavaScript directly into the live preview canvas. All inputs are automatically sanitized for security.</p>
+        <textarea
+          className="w-full h-40 bg-slate-950 border border-slate-700 rounded-lg p-4 font-mono text-xs text-slate-300 focus:ring-2 focus:ring-blue-500 focus:outline-none resize-y"
+          placeholder="Paste your custom HTML, CSS, or JavaScript here (e.g., <div>Hello World!</div>)..."
+          value={customHtmlInput}
+          onChange={(e) => setCustomHtmlInput(e.target.value)}
+        ></textarea>
+        <button
+          onClick={handleCustomHtmlInject}
+          className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-4 rounded-xl text-sm transition-colors"
+        >
+          Inject Custom Layout to Canvas
+        </button>
+      </div>
+      {/* End: Custom HTML/CSS/JS Custom Sandbox Deck */}
+
+      {/* Start: Interactive Visual Layout Palette Canvas Engine */}
+      <div className="space-y-4 pt-6 border-t border-slate-800 mt-6">
+        <h3 className="text-xs font-bold uppercase tracking-widest text-slate-500">Interactive Visual Layout Palette Canvas Engine</h3>
+        <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl space-y-8">
+          {layoutLibrary.map((layout) => (
+            <div key={layout.id} className="space-y-4 border-b border-slate-800 last:border-b-0 pb-6">
+              <h5 className="text-lg font-bold text-white">{layout.name}</h5>
+              <p className="text-slate-400 text-sm">{layout.description}</p>
+
+              {/* Layout specific configuration options */}
+              {layout.configOptionsRender && layout.configOptionsRender({ numColumns: numColumnsForLayout, setNumColumns: setNumColumnsForLayout })}
+
+              {/* Live Responsive Layout Preview Window */}
+              <div className="bg-slate-950 border border-slate-700 rounded-lg p-4 flex justify-center items-center min-h-[100px]">
+                {layout.preview}
+              </div>
+
+              {/* Action Button to Inject Layout */}
+              <button
+                onClick={() => layout.injectLogic(activePreviewJson, { numColumns: numColumnsForLayout })}
+                className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-4 rounded-xl text-sm transition-colors"
+              >
+                Inject Layout to Canvas
+              </button>
+            </div>
+          ))}
+        </div>
+      </div>
+      {/* End: Interactive Visual Layout Palette Canvas Engine */}
     </section>
   );
 };
