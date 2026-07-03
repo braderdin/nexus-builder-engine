@@ -163,6 +163,108 @@ export default function DashboardPage() {
     setIsTestimonialsSectionEnabled(!!template.layout_data.testimonialsSection && template.layout_data.testimonialsSection.length > 0);
   };
 
+  // Start: ContentConfigurator Handlers
+  const handleUpdateHeroHeadline = (headline: string) => {
+    setActivePreviewJson((prev) => ({
+      ...prev,
+      heroSection: { ...(prev.heroSection || {}), headline },
+    }));
+  };
+
+  const handleUpdateHeroSubheadline = (subheadline: string) => {
+    setActivePreviewJson((prev) => ({
+      ...prev,
+      heroSection: { ...(prev.heroSection || {}), subheadline },
+    }));
+  };
+
+  const handleUpdateWhatsappTargetNumber = (targetNumber: string) => {
+    setActivePreviewJson((prev) => ({
+      ...prev,
+      whatsappFormSection: { ...(prev.whatsappFormSection || {}), targetNumber },
+    }));
+  };
+
+  const handleUpdateWhatsappButtonText = (buttonText: string) => {
+    setActivePreviewJson((prev) => ({
+      ...prev,
+      whatsappFormSection: { ...(prev.whatsappFormSection || {}), buttonText },
+    }));
+  };
+  // End: ContentConfigurator Handlers
+
+  // Start: BlueprintNavigator Handlers
+  const handleToggleFeaturesSection = (isEnabled: boolean) => {
+    setIsFeaturesSectionEnabled(isEnabled);
+    setActivePreviewJson((prev) => ({
+      ...prev,
+      featuresSection: isEnabled ? (prev.featuresSection || []) : undefined,
+    }));
+  };
+
+  const handleTogglePortfolioSection = (isEnabled: boolean) => {
+    setIsPortfolioSectionEnabled(isEnabled);
+    setActivePreviewJson((prev) => ({
+      ...prev,
+      portfolioSection: isEnabled ? (prev.portfolioSection || []) : undefined,
+    }));
+  };
+
+  const handleAddPortfolioItem = (item: { id: string; title: string; description: string; imageUrl: string }) => {
+    setActivePreviewJson((prev) => ({
+      ...prev,
+      portfolioSection: [...(prev.portfolioSection as Array<any> || []), item],
+    }));
+  };
+
+  const handleRemovePortfolioItem = (id: string) => {
+    setActivePreviewJson((prev) => ({
+      ...prev,
+      portfolioSection: (prev.portfolioSection as Array<any> || []).filter((item) => item.id !== id),
+    }));
+  };
+
+  const handleUpdatePortfolioItemTitle = (id: string, title: string) => {
+    setActivePreviewJson((prev) => ({
+      ...prev,
+      portfolioSection: (prev.portfolioSection as Array<any> || []).map((item) =>
+        item.id === id ? { ...item, title } : item
+      ),
+    }));
+  };
+
+  const handleToggleTestimonialsSection = (isEnabled: boolean) => {
+    setIsTestimonialsSectionEnabled(isEnabled);
+    setActivePreviewJson((prev) => ({
+      ...prev,
+      testimonialsSection: isEnabled ? (prev.testimonialsSection || []) : undefined,
+    }));
+  };
+
+  const handleAddTestimonialItem = (item: { id: string; clientName: string; feedback: string; clientTitle: string }) => {
+    setActivePreviewJson((prev) => ({
+      ...prev,
+      testimonialsSection: [...(prev.testimonialsSection as Array<any> || []), item],
+    }));
+  };
+
+  const handleRemoveTestimonialItem = (id: string) => {
+    setActivePreviewJson((prev) => ({
+      ...prev,
+      testimonialsSection: (prev.testimonialsSection as Array<any> || []).filter((item) => item.id !== id),
+    }));
+  };
+
+  const handleUpdateTestimonialItemClientName = (id: string, clientName: string) => {
+    setActivePreviewJson((prev) => ({
+      ...prev,
+      testimonialsSection: (prev.testimonialsSection as Array<any> || []).map((item) =>
+        item.id === id ? { ...item, clientName } : item
+      ),
+    }));
+  };
+  // End: BlueprintNavigator Handlers
+
   const handleUserSignOut = async () => {
     await supabase.auth.signOut();
     router.push("/auth");
@@ -301,14 +403,25 @@ export default function DashboardPage() {
 
         {/* Start: Split Sub-Components Configurations UI */}
         <section className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <ContentConfigurator activePreviewJson={activePreviewJson} setActivePreviewJson={setActivePreviewJson} />
-          <BlueprintNavigator 
-            activePreviewJson={activePreviewJson} 
-            setActivePreviewJson={setActivePreviewJson}
+          <ContentConfigurator
+            activePreviewJson={activePreviewJson}
+            onUpdateHeroHeadline={handleUpdateHeroHeadline}
+            onUpdateHeroSubheadline={handleUpdateHeroSubheadline}
+            onUpdateWhatsappTargetNumber={handleUpdateWhatsappTargetNumber}
+            onUpdateWhatsappButtonText={handleUpdateWhatsappButtonText}
+          />
+          <BlueprintNavigator
+            activePreviewJson={activePreviewJson}
             isPortfolioSectionEnabled={isPortfolioSectionEnabled}
-            setIsPortfolioSectionEnabled={setIsPortfolioSectionEnabled}
+            onTogglePortfolioSection={handleTogglePortfolioSection}
+            onAddPortfolioItem={handleAddPortfolioItem}
+            onRemovePortfolioItem={handleRemovePortfolioItem}
+            onUpdatePortfolioItemTitle={handleUpdatePortfolioItemTitle}
             isTestimonialsSectionEnabled={isTestimonialsSectionEnabled}
-            setIsTestimonialsSectionEnabled={setIsTestimonialsSectionEnabled}
+            onToggleTestimonialsSection={handleToggleTestimonialsSection}
+            onAddTestimonialItem={handleAddTestimonialItem}
+            onRemoveTestimonialItem={handleRemoveTestimonialItem}
+            onUpdateTestimonialItemClientName={handleUpdateTestimonialItemClientName}
           />
         </section>
 
