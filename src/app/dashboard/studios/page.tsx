@@ -16,6 +16,15 @@ interface LayoutControls {
   neonShadowEnabled: boolean;
 }
 
+// New interface for saved studio layouts
+interface SavedStudioLayout {
+  id: string;
+  name: string;
+  controls: LayoutControls;
+  activeBlueprintId: string;
+  timestamp: string; // ISO string for sorting and display
+}
+
 // Blueprint definition for predefined sections
 interface SectionBlueprint {
   id: string;
@@ -131,10 +140,26 @@ const ONBOARDING_STEPS: OnboardingStep[] = [
     targetId: "code-sheet-toggle",
   },
   {
+    title: "5. Local Snapshot Preservation",
+    description: "Utilize the 'Save Studio Layout' button to store your current design configuration locally in your browser. Access and manage all your saved layouts in the 'Saved Masterpiece Ledger Hub'.",
+    targetId: "save-layout-button", // Targeting the new save button
+  },
+  {
     title: "Congratulations, You're Ready!",
     description: "You've completed the design academy wizard. Start crafting your unique web experiences. Happy designing!",
   },
 ];
+
+// Basic Toast Component for notifications
+const Toast = ({ message, show }: { message: string | null; show: boolean }) => {
+  if (!show || !message) return null;
+
+  return (
+    <div className="fixed bottom-6 right-6 z-50 p-4 bg-green-600 text-white rounded-lg shadow-xl transition-opacity duration-300 ease-out opacity-100">
+      {message}
+    </div>
+  );
+};
 
 
 // Main component for the Studios page
@@ -149,6 +174,50 @@ export default function StudiosPage() {
   const [activeBlueprint, setActiveBlueprint] = useState<SectionBlueprint>(PREBUILT_BLUEPRINTS[0]);
   const [showCodeSheet, setShowCodeSheet] = useState<boolean>(false);
   const [onboardingStep, setOnboardingStep] = useState<number>(0);
+
+  // State for layout persistence
+  const [savedLayouts, setSavedLayouts] = useState<SavedStudioLayout[]>([]);
+  const [showSaveModal, setShowSaveModal] = useState<boolean>(false);
+  const [layoutName, setLayoutName] = useState<string>('');
+
+  // State for toast notifications
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const [showToast, setShowToast] = useState<boolean>(false);
+
+  // Client-side hook for localStorage synchronization (load on mount)
+  useEffect(() => {
+    if (typeof window !== 'undefined') { // Ensure window is available for client-side operations
+      const storedLayouts = localStorage.getItem('savedStudioLayouts');
+      if (storedLayouts) {
+        try {
+          setSavedLayouts(JSON.parse(storedLayouts));
+        } catch (error) {
+          console.error("Failed to parse saved layouts from localStorage:", error);
+          // Optionally clear invalid data if parsing fails
+          localStorage.removeItem('savedStudioLayouts');
+        }
+      }
+    }
+  }, []); // Empty dependency array means this runs once on component mount
+
+  // Client-side hook for localStorage synchronization (save on change)
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('savedStudioLayouts', JSON.stringify(savedLayouts));
+    }
+  }, [savedLayouts]); // Runs whenever savedLayouts state changes
+
+  // Effect for displaying toast notifications
+  useEffect(() => {
+    let timer: NodeJS.Timeout;
+    if (showToast) {
+      timer = setTimeout(() => {
+        setShowToast(false);
+        setToastMessage(null);
+      }, 3000); // Toast disappears after 3 seconds
+    }
+    return () => clearTimeout(timer); // Cleanup timer on unmount or if showToast changes
+  }, [showToast]);
 
   // Computed CSS properties for the live preview
   const computedCssProperties: React.CSSProperties = useMemo(() => {
@@ -180,6 +249,56 @@ export default function StudiosPage() {
     return controls.neonShadowEnabled ? `${controls.neonShadowSpread} ${controls.neonShadowColor}` : 'shadow-none';
   }, [controls.neonShadowEnabled, controls.neonShadowSpread, controls.neonShadowColor]);
 
+  // Handler for saving the current layout configuration
+  const handleSaveLayout = () => {
+    if (!layoutName.trim()) {
+      setToastMessage('Layout name cannot be empty!');
+      setShowToast(true);
+      return;
+    }
+
+    const newLayout: SavedStudioLayout = {
+      id: window.crypto.randomUUID(), // Generate a unique ID for the layout
+      name: layoutName.trim(),
+      controls: controls,
+      activeBlueprintId: activeBlueprint.id,
+      timestamp: new Date().toISOString(), // Record current timestamp
+    };
+
+    setSavedLayouts((prev) => [...prev, newLayout]); // Add new layout to state
+    setLayoutName(''); // Clear the input field
+    setShowSaveModal(false); // Close the save modal
+    setToastMessage('Layout Matrix Captured Successfully!');
+    setShowToast(true);
+
+    if (onboardingStep === 5) { // If user is on 'Local Snapshot Preservation' step
+      handleAdvanceTour();
+    }
+  };
+
+  // Handler for loading a saved layout configuration
+  const handleLoadLayout = (layout: SavedStudioLayout) => {
+    setControls(layout.controls); // Apply saved controls
+    const blueprintToLoad = PREBUILT_BLUEPRINTS.find(b => b.id === layout.activeBlueprintId);
+    if (blueprintToLoad) {
+      setActiveBlueprint(blueprintToLoad); // Set the active blueprint
+    } else {
+      console.warn("Blueprint not found for loaded layout:", layout.activeBlueprintId);
+      // Fallback to default blueprint if the saved one is not found
+      setActiveBlueprint(PREBUILT_BLUEPRINTS[0]);
+    }
+    setToastMessage(`Layout "${layout.name}" loaded successfully.`);
+    setShowToast(true);
+  };
+
+  // Handler for deleting a saved layout configuration
+  const handleDeleteLayout = (id: string, name: string) => {
+    if (window.confirm(`Are you sure you want to delete "${name}"?`)) { // Confirmation dialog
+      setSavedLayouts((prev) => prev.filter(layout => layout.id !== id)); // Remove layout from state
+      setToastMessage(`Layout "${name}" deleted.`);
+      setShowToast(true);
+    }
+  };
 
   // Handler for updating layout controls
   const handleControlChange = <K extends keyof LayoutControls>(key: K, value: LayoutControls[K]) => {
@@ -331,6 +450,85 @@ export default function StudiosPage() {
             </div>
           </div>
 
+          {/* Save Studio Layout Button */}
+          <div className="mb-8">
+            <button
+              onClick={() => setShowSaveModal(true)}
+              className="w-full px-4 py-3 bg-indigo-600 text-white font-semibold rounded-lg hover:bg-indigo-700 transition-colors shadow-lg flex items-center justify-center space-x-2"
+              id="save-layout-button"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-11a1 1 0 10-2 0v2H7a1 1 0 100 2h2v2a1 1 0 102 0v-2h2a1 1 0 100-2h-2V7z" clipRule="evenodd" />
+              </svg>
+              <span>Save Studio Layout</span>
+            </button>
+
+            {/* Save Layout Modal */}
+            {showSaveModal && (
+              <div className="fixed inset-0 bg-slate-900 bg-opacity-75 flex items-center justify-center z-40 p-4">
+                <div className="bg-slate-800 border border-slate-700 rounded-lg p-6 w-full max-w-md shadow-2xl">
+                  <h4 className="text-lg font-bold text-white mb-4">Name Your Masterpiece</h4>
+                  <input
+                    type="text"
+                    value={layoutName}
+                    onChange={(e) => setLayoutName(e.target.value)}
+                    placeholder="e.g., 'My Hero Section v1'"
+                    className="w-full p-2.5 bg-slate-700 border border-slate-600 rounded-lg text-sm text-white focus:ring-blue-500 focus:border-blue-500 mb-4"
+                  />
+                  <div className="flex justify-end space-x-3">
+                    <button
+                      onClick={() => setShowSaveModal(false)}
+                      className="px-4 py-2 bg-slate-600 text-white text-sm font-medium rounded-lg hover:bg-slate-700 transition-colors"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      onClick={handleSaveLayout}
+                      className="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors"
+                    >
+                      Save Layout
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Saved Masterpiece Ledger Hub */}
+          <div className="mb-8" id="saved-layouts-ledger">
+            <h3 className="text-sm uppercase tracking-widest text-slate-400 mb-3">Saved Masterpiece Ledger Hub</h3>
+            {savedLayouts.length === 0 ? (
+              <p className="text-sm text-slate-500 italic">No layouts saved yet. Start designing and save your first masterpiece!</p>
+            ) : (
+              <div className="space-y-3 max-h-60 overflow-y-auto pr-2"> {/* Added max-h and overflow for scrollable list */}
+                {savedLayouts.map((layout) => (
+                  <div key={layout.id} className="flex items-center justify-between p-3 bg-slate-800 border border-slate-700 rounded-lg">
+                    <div className="flex-grow mr-2">
+                      <button
+                        onClick={() => handleLoadLayout(layout)}
+                        className="block text-left text-sm font-semibold text-white hover:text-blue-400 transition-colors"
+                      >
+                        {layout.name}
+                      </button>
+                      <p className="text-xs text-slate-500">
+                        {new Date(layout.timestamp).toLocaleString()}
+                      </p>
+                    </div>
+                    <button
+                      onClick={() => handleDeleteLayout(layout.id, layout.name)}
+                      className="text-slate-500 hover:text-rose-500 transition-colors p-1 rounded-full"
+                      title="Delete Layout"
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                        <path fillRule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm6 0a1 1 0 11-2 0v6a1 1 0 112 0V8z" clipRule="evenodd" />
+                      </svg>
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
           {/* Contextual Micro-Onboarding Layout Design Academy Wizard */}
           <div className="bg-slate-800 border border-slate-700 rounded-xl p-4 sticky bottom-0">
             <h3 className="text-sm uppercase tracking-widest text-blue-400 mb-3">Design Academy Wizard</h3>
@@ -391,6 +589,8 @@ export default function StudiosPage() {
           </div>
         </main>
       </div>
+      {/* Toast Notification for user feedback */}
+      <Toast message={toastMessage} show={showToast} />
     </div>
   );
 }
