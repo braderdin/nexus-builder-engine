@@ -5,6 +5,12 @@ import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase/client"; // Assuming supabase client is needed for auth check
 
 // Start: Component Local Type Definitions
+interface UserProfile {
+  id: string;
+  email: string;
+  // Add other user profile properties if needed
+}
+
 type SubscriptionTier = "Free" | "Premium Pro";
 
 interface InvoiceRecord {
@@ -14,6 +20,102 @@ interface InvoiceRecord {
   status: "Paid" | "Pending" | "Failed";
   transactionHash: string; // Mock monospace hash
 }
+
+// Pricing plan features
+const FREE_FEATURES = [
+  "1 Site Deployment",
+  "Basic Templates",
+  "Limited AI Features",
+  "Community Support",
+  "50MB Storage",
+  "Standard Analytics",
+];
+
+const PREMIUM_FEATURES = [
+  "Unlimited Site Deployments",
+  "Premium Templates",
+  "Advanced AI Features",
+  "Priority Support",
+  "25GB Storage",
+  "Real-time Analytics",
+  "Custom Domains (Coming Soon)",
+];
+
+interface PricingCardProps {
+  tier: SubscriptionTier;
+  price: string;
+  description: string;
+  features: string[];
+  isCurrent: boolean;
+  onSelect: (tier: SubscriptionTier) => void;
+  onUpgrade: (tier: SubscriptionTier) => Promise<void>;
+  isRedirecting: boolean;
+  disabled: boolean;
+}
+
+const PricingCard: React.FC<PricingCardProps> = ({
+  tier,
+  price,
+  description,
+  features,
+  isCurrent,
+  onSelect,
+  onUpgrade,
+  isRedirecting,
+  disabled,
+}) => (
+  <div
+    className={`relative flex flex-col p-6 rounded-2xl shadow-xl border
+      ${isCurrent
+        ? "border-purple-600 bg-slate-900 ring-2 ring-purple-500"
+        : "border-slate-800 bg-slate-900 hover:border-slate-700 transition-colors cursor-pointer"}
+    `}
+    onClick={() => !disabled && onSelect(tier)}
+  >
+    {isCurrent && (
+      <div className="absolute top-0 right-0 -mt-3 -mr-3 px-3 py-1 bg-purple-600 text-white text-xs font-bold rounded-full shadow-md">
+        Current Plan
+      </div>
+    )}
+    <h3 className="text-2xl font-bold text-white mb-2">{tier}</h3>
+    <p className="text-sm text-slate-400 mb-4">{description}</p>
+    <div className="text-4xl font-extrabold text-white mb-6">
+      {price}
+      {tier === "Free" ? "" : <span className="text-lg font-medium text-slate-500">/month</span>}
+    </div>
+
+    <ul className="flex-grow space-y-3 text-sm text-slate-300 mb-8">
+      {features.map((feature, index) => (
+        <li key={index} className="flex items-center">
+          <svg className="w-5 h-5 text-emerald-400 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path>
+          </svg>
+          {feature}
+        </li>
+      ))}
+    </ul>
+
+    {tier !== "Free" && (
+      <button
+        onClick={(e) => {
+          e.stopPropagation(); // Prevent onSelect from firing
+          onUpgrade(tier);
+        }}
+        disabled={isRedirecting || disabled || isCurrent}
+        className={`w-full py-3 rounded-xl text-sm font-semibold transition-all
+          ${isCurrent
+            ? "bg-slate-700 text-slate-400 cursor-default"
+            : isRedirecting
+              ? "bg-blue-700 text-white cursor-wait opacity-80"
+              : "bg-blue-600 hover:bg-blue-500 text-white"}
+          ${disabled && "opacity-50 cursor-not-allowed"}
+        `}
+      >
+        {isCurrent ? "Your Current Plan" : isRedirecting ? "Redirecting to Checkout..." : `Upgrade to ${tier}`}
+      </button>
+    )}
+  </div>
+);
 
 const MOCK_INVOICES: InvoiceRecord[] = [
   {
@@ -50,9 +152,10 @@ const MOCK_INVOICES: InvoiceRecord[] = [
 // Start: Enterprise Billing & Invoices Core Hub Page Component
 export default function BillingPage() {
   const router = useRouter();
-  const [userProfile, setUserProfile] = useState<any>(null);
+  const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [isDataLoading, setIsDataLoading] = useState<boolean>(true);
-  const [currentSubscriptionTier, setCurrentSubscriptionTier] = useState<SubscriptionTier>("Free");
+  const [currentSubscriptionTier, setCurrentSubscriptionTier] = useState<SubscriptionTier>("Free"); // This should be fetched from user data
+  const [selectedPlan, setSelectedPlan] = useState<SubscriptionTier>(currentSubscriptionTier);
   const [invoiceHistory, setInvoiceHistory] = useState<InvoiceRecord[]>(MOCK_INVOICES);
   const [isRedirectingToStripe, setIsRedirectingToStripe] = useState<boolean>(false);
   const [checkoutStatus, setCheckoutStatus] = useState<string | null>(null);
@@ -62,13 +165,31 @@ export default function BillingPage() {
     const verifyUserSession = async () => {
       setIsDataLoading(true);
       const { data: { session }, error } = await supabase.auth.getSession();
-      if (error || !session) {
+      if (error || !session || !session.user) {
         router.push("/auth");
       } else {
-        setUserProfile(session.user);
-        // Simulate fetching user's actual subscription tier from backend
+        // Assuming session.user contains at least id and email
+        setUserProfile({
+          id: session.user.id,
+          email: session.user.email || "anonymous", // Fallback for email
+        });
+
+        // In a real app, fetch the user's current subscription tier from your backend
+        // For this example, we'll simulate it, perhaps based on a profile property
         // For now, let's keep it "Free" unless a successful checkout is detected
-        // In a real app, you'd fetch this from your database
+        // Or if you have a `profiles` table with `is_premium` flag:
+        const { data: profile, error: profileError } = await supabase
+          .from('profiles')
+          .select('is_premium')
+          .eq('id', session.user.id)
+          .single();
+
+        if (profileError) {
+          console.error("Error fetching user profile:", profileError);
+        } else if (profile?.is_premium) {
+          setCurrentSubscriptionTier("Premium Pro");
+          setSelectedPlan("Premium Pro"); // Set selected plan to current if premium
+        }
       }
       setIsDataLoading(false);
     };
@@ -95,15 +216,24 @@ export default function BillingPage() {
   }, [router]);
   // End: User Session Verification and Stripe Checkout Status Check Effect
 
-  // Start: Handle Upgrade to Premium Pro Click
-  const handleUpgradeClick = async () => {
-    if (!userProfile?.email) {
-      alert("User email not found. Please log in again.");
+  // Start: Handle Upgrade Click for a specific tier
+  const handleUpgradeClick = async (tier: SubscriptionTier) => {
+    if (!userProfile?.id || !userProfile?.email) {
+      alert("User authentication error. Please log in again.");
       return;
     }
+    if (tier === "Free") return; // Free tier cannot be 'upgraded' in this context
 
     setIsRedirectingToStripe(true);
     setCheckoutStatus(null); // Clear previous status
+
+    const priceId = process.env.NEXT_PUBLIC_STRIPE_PREMIUM_PRO_PRICE_ID;
+
+    if (!priceId) {
+      setCheckoutStatus("Configuration Error: Stripe price ID is not set.");
+      setIsRedirectingToStripe(false);
+      return;
+    }
 
     try {
       const response = await fetch("/api/checkout", {
@@ -112,8 +242,9 @@ export default function BillingPage() {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
+          userId: userProfile.id, // Pass user ID
           userEmail: userProfile.email,
-          priceId: process.env.NEXT_PUBLIC_STRIPE_PREMIUM_PRO_PRICE_ID, // Use environment variable for Stripe Price ID
+          priceId: priceId,
         }),
       });
 
@@ -131,7 +262,7 @@ export default function BillingPage() {
       setIsRedirectingToStripe(false);
     }
   };
-  // End: Handle Upgrade to Premium Pro Click
+  // End: Handle Upgrade Click for a specific tier
 
   if (isDataLoading) {
     return (
@@ -196,46 +327,41 @@ export default function BillingPage() {
         )}
         {/* End: Checkout Status Banner */}
 
-        {/* Start: Current Subscription Tier */}
-        <section className="bg-slate-900 border border-slate-800 rounded-xl p-6 shadow-2xl flex flex-col md:flex-row items-center justify-between gap-6">
-          <div className="text-center md:text-left">
-            <h3 className="text-lg font-bold text-white">Current Subscription Tier</h3>
-            <div className="mt-3 flex items-center justify-center md:justify-start gap-3">
-              <span className={`text-sm font-semibold px-4 py-2 rounded-full relative overflow-hidden
-                ${currentSubscriptionTier === "Premium Pro"
-                  ? "bg-gradient-to-br from-purple-800 to-indigo-800 text-white shadow-lg shadow-purple-950"
-                  : "bg-slate-800 text-slate-300 border border-slate-700"}
-              `}>
-                {currentSubscriptionTier}
-                {currentSubscriptionTier === "Premium Pro" && (
-                  <>
-                    <span className="absolute inset-0 rounded-full blur-sm opacity-50 bg-gradient-to-br from-purple-500 to-indigo-500 animate-pulse-slow"></span>
-                    <span className="relative z-10"> ✨ Active</span>
-                  </>
-                )}
-              </span>
-            </div>
-            {currentSubscriptionTier === "Free" && (
-              <p className="text-xs text-slate-400 mt-2">
-                Unlock advanced features, unlimited sites, and priority AI support with Premium Pro.
-              </p>
-            )}
+        {/* Start: Pricing Comparison Grid */}
+        <section className="space-y-8">
+          <div className="text-center">
+            <h3 className="text-xl sm:text-2xl font-bold text-white mb-2">Choose Your Plan</h3>
+            <p className="text-sm text-slate-400 max-w-2xl mx-auto">
+              Select the perfect plan to boost your online presence. Upgrade anytime for more power.
+            </p>
           </div>
-          {currentSubscriptionTier === "Free" && (
-            <button
-              onClick={handleUpgradeClick}
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto">
+            <PricingCard
+              tier="Free"
+              price="RM 0"
+              description="Perfect for starting your journey with essential features."
+              features={FREE_FEATURES}
+              isCurrent={currentSubscriptionTier === "Free"}
+              onSelect={setSelectedPlan}
+              onUpgrade={handleUpgradeClick}
+              isRedirecting={isRedirectingToStripe}
               disabled={isRedirectingToStripe}
-              className={`text-sm font-bold px-6 py-3 rounded-xl transition-all shadow-lg
-                ${isRedirectingToStripe
-                  ? "bg-slate-700 cursor-not-allowed text-slate-400"
-                  : "bg-blue-600 hover:bg-blue-500 text-white focus:outline-none focus:ring-2 focus:ring-blue-500"}
-              `}
-            >
-              {isRedirectingToStripe ? "Redirecting..." : "Upgrade to Premium Pro"}
-            </button>
-          )}
+            />
+            <PricingCard
+              tier="Premium Pro"
+              price="RM 99"
+              description="Unlock advanced capabilities for ultimate growth and performance."
+              features={PREMIUM_FEATURES}
+              isCurrent={currentSubscriptionTier === "Premium Pro"}
+              onSelect={setSelectedPlan}
+              onUpgrade={handleUpgradeClick}
+              isRedirecting={isRedirectingToStripe}
+              disabled={isRedirectingToStripe}
+            />
+          </div>
         </section>
-        {/* End: Current Subscription Tier */}
+        {/* End: Pricing Comparison Grid */}
 
         {/* Start: Historical Invoice Records Grid Matrix */}
         <section className="bg-slate-900 border border-slate-800 rounded-xl p-0 overflow-hidden shadow-2xl">

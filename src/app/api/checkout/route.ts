@@ -9,6 +9,7 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || "", {
 
 // Start: Request Payload Type Definition
 interface CheckoutPayload {
+  userId: string; // The unique ID of the user from your database
   userEmail: string;
   priceId: string; // The ID of the Stripe Price object for the product/subscription
 }
@@ -18,11 +19,15 @@ interface CheckoutPayload {
 export async function POST(request: NextRequest) {
   try {
     // Start: Dynamic Payload Context Extraction and Validation
-    const { userEmail, priceId }: CheckoutPayload = await request.json();
+    const { userId, userEmail, priceId }: CheckoutPayload = await request.json();
 
-    if (!userEmail || typeof userEmail !== "string" || !priceId || typeof priceId !== "string") {
+    if (
+      !userId || typeof userId !== "string" ||
+      !userEmail || typeof userEmail !== "string" ||
+      !priceId || typeof priceId !== "string"
+    ) {
       return NextResponse.json(
-        { error: "Invalid Payload", message: "User email and price ID are required." },
+        { error: "Invalid Payload", message: "User ID, email, and price ID are required." },
         { status: 400 }
       );
     }
@@ -48,7 +53,7 @@ export async function POST(request: NextRequest) {
       success_url: successUrl,
       cancel_url: cancelUrl,
       metadata: {
-        userId: userEmail, // Custom metadata for webhook handling if needed
+        user_id: userId, // Explicitly map user ID for webhook handling
         priceId: priceId,
       },
     });
