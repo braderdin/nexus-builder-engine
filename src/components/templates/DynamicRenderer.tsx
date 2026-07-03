@@ -17,15 +17,39 @@ interface DynamicRendererProps {
       buttonText: string;
       targetNumber: string;
     };
+    themeAccent?: 'blue' | 'purple' | 'emerald'; // New: Theme accent color
+    featuresSection?: Array<{ title: string; description: string; }>; // New: Features section
   };
 }
 // End: Component Properties Architectural Definition
+
+// Start: Theme Accent Class Mapping
+const themeAccentClasses = {
+  blue: {
+    heroButton: "bg-blue-600 hover:bg-blue-500 shadow-blue-950",
+    whatsappButton: "bg-blue-600 hover:bg-blue-500 shadow-blue-950",
+    borderColor: "border-blue-800",
+  },
+  purple: {
+    heroButton: "bg-purple-600 hover:bg-purple-500 shadow-purple-950",
+    whatsappButton: "bg-purple-600 hover:bg-purple-500 shadow-purple-950",
+    borderColor: "border-purple-800",
+  },
+  emerald: {
+    heroButton: "bg-emerald-600 hover:bg-emerald-500 shadow-emerald-950",
+    whatsappButton: "bg-emerald-600 hover:bg-emerald-500 shadow-emerald-950",
+    borderColor: "border-emerald-800",
+  },
+};
+// End: Theme Accent Class Mapping
 
 // Start: Core Engine Visual Builder JSON Parser Component
 export default function DynamicRenderer({ layoutData }: DynamicRendererProps) {
   // Safe fallback assignment if JSON schema elements are missing or empty
   const hero = layoutData?.heroSection;
   const whatsappForm = layoutData?.whatsappFormSection;
+  const themeAccent = layoutData?.themeAccent || 'blue'; // Default theme accent
+  const currentTheme = themeAccentClasses[themeAccent];
 
   // Start: Dynamic Target WhatsApp Direct Action Link Trigger
   const handleWhatsAppRedirection = () => {
@@ -61,7 +85,7 @@ export default function DynamicRenderer({ layoutData }: DynamicRendererProps) {
             {hero.subheadline || "No dynamic subheadline data mapped inside the layout JSON stream."}
           </p>
           <div className="mt-8">
-            <button className="w-full sm:w-auto bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold px-6 py-3 rounded-xl transition-all shadow-md shadow-blue-950">
+            <button className={`w-full sm:w-auto text-white text-xs font-bold px-6 py-3 rounded-xl transition-all shadow-md ${currentTheme.heroButton}`}>
               {hero.ctaText || "Explore Node"}
             </button>
           </div>
@@ -83,7 +107,7 @@ export default function DynamicRenderer({ layoutData }: DynamicRendererProps) {
             </div>
             <button
               onClick={handleWhatsAppRedirection}
-              className="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs py-3.5 rounded-xl transition-all shadow-lg shadow-emerald-950/40 flex items-center justify-center gap-2"
+              className={`w-full text-white font-bold text-xs py-3.5 rounded-xl transition-all shadow-lg flex items-center justify-center gap-2 ${currentTheme.whatsappButton}`}
             >
               <span className="text-sm">💬</span>
               {whatsappForm.buttonText || "Initialize WhatsApp Chat"}
@@ -92,6 +116,33 @@ export default function DynamicRenderer({ layoutData }: DynamicRendererProps) {
         </section>
       )}
       {/* End: Dynamic Parsed WhatsApp Lead Form Section Component */}
+
+      {/* Start: Dynamic Parsed Features Grid Section Component */}
+      {layoutData.featuresSection && layoutData.featuresSection.length > 0 && (
+        <section className="px-6 py-12 sm:py-20 bg-slate-900/10 border-t border-slate-900">
+          <div className="max-w-6xl mx-auto">
+            <h2 className="text-xl sm:text-2xl font-extrabold text-white text-center mb-12">
+              Key Features
+            </h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {layoutData.featuresSection.map((feature, index) => (
+                <div 
+                  key={index} 
+                  className={`bg-slate-900 border ${currentTheme.borderColor} rounded-2xl p-6 shadow-xl space-y-3 transition-colors hover:border-blue-500`}
+                >
+                  <h3 className="text-base font-bold text-white">
+                    {feature.title || "Untitled Feature"}
+                  </h3>
+                  <p className="text-xs text-slate-400 leading-relaxed">
+                    {feature.description || "No description provided for this feature."}
+                  </p>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
+      {/* End: Dynamic Parsed Features Grid Section Component */}
 
     </div>
   );

@@ -82,3 +82,69 @@ export const getMerchantWebsiteBySubdomain = async (
   return { data: siteDataWithPremium, error: null };
 };
 // End: Get Merchant Website By Subdomain Controller
+
+// Start: Get User Active Sites Count Controller
+/**
+ * Securely counts the total rows matching the user_id in the public.sites table.
+ */
+export const getUserActiveSitesCount = async (
+  userId: string
+): Promise<{ count: number | null; error: any | null }> => {
+  const { count, error } = await supabase
+    .from("sites")
+    .select("id", { count: "exact", head: true }) // Using head: true for efficiency to only get count
+    .eq("user_id", userId);
+
+  if (error) {
+    console.error("Error fetching active sites count:", error);
+    return { count: null, error };
+  }
+
+  return { count, error: null };
+};
+// End: Get User Active Sites Count Controller
+
+// Start: Get User Deployed Sites Controller
+/**
+ * Retrieves all deployed sites for a given user, returning subdomain and creation date.
+ */
+export const getUserDeployedSites = async (
+  userId: string
+): Promise<{ data: Array<{ subdomain: string; created_at: string; seo_title: string }> | null; error: any | null }> => {
+  const { data, error } = await supabase
+    .from("sites")
+    .select("subdomain, created_at, seo_title")
+    .eq("user_id", userId)
+    .order("created_at", { ascending: false }); // Order by creation date, newest first
+
+  if (error) {
+    console.error("Error fetching user deployed sites:", error);
+    return { data: null, error };
+  }
+
+  return { data: data as Array<{ subdomain: string; created_at: string; seo_title: string }>, error: null };
+};
+// End: Get User Deployed Sites Controller
+
+// Start: Subdomain Availability Checker
+/**
+ * Queries the public.sites table to verify if the requested subdomain already exists.
+ * Returns true if the subdomain is taken, false otherwise.
+ */
+export const checkSubdomainAvailability = async (
+  subdomain: string
+): Promise<boolean> => {
+  const { count, error } = await supabase
+    .from("sites")
+    .select("id", { count: "exact", head: true })
+    .eq("subdomain", subdomain);
+
+  if (error) {
+    console.error("Error checking subdomain availability:", error);
+    // In case of an error, assume it's taken or unavailable to prevent conflicts.
+    return true;
+  }
+
+  return (count || 0) > 0; // If count > 0, it means the subdomain is taken.
+};
+// End: Subdomain Availability Checker

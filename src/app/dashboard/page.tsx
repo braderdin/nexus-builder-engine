@@ -7,12 +7,14 @@ import { useRouter } from "next/navigation";
 
 // Start: External Backend, Component, and Localization Dependency Imports
 import { supabase } from "@/lib/supabase/client";
-import { deployMerchantWebsiteBlueprint } from "@/lib/supabase/sites";
+import { deployMerchantWebsiteBlueprint, getUserActiveSitesCount, getUserDeployedSites } from "@/lib/supabase/sites";
 import AiConsole from "@/components/common/AiConsole";
 import DynamicRenderer from "@/components/templates/DynamicRenderer";
 import ImageGenerator from "@/components/common/ImageGenerator";
-import SelfHealingEngine from "@/components/common/SelfHealingEngine"; // New import
+import SelfHealingEngine from "@/components/common/SelfHealingEngine";
+import SubdomainChecker from "@/components/common/SubdomainChecker"; // New import: SubdomainChecker
 import { localizationDictionaries, LanguageCode } from "@/config/dictionaries";
+import AnalyticsSimulator from "@/components/common/AnalyticsSimulator"; // New import: AnalyticsSimulator
 // End: External Backend and Component Dependency Imports
 
 // Start: Mock Template Architecture Definitions
@@ -23,7 +25,10 @@ interface WebTemplate {
   description: string;
   features: string[];
   isPremium: boolean;
-  layout_data: Record<string, any>;
+  layout_data: Record<string, any> & { 
+    themeAccent?: 'blue' | 'purple' | 'emerald';
+    featuresSection?: Array<{ title: string; description: string; }>; // New: Optional features section
+  };
 }
 
 const PREBUILT_TEMPLATES: WebTemplate[] = [
@@ -44,7 +49,22 @@ const PREBUILT_TEMPLATES: WebTemplate[] = [
         promptTitle: "Direct Order Form Pipeline",
         buttonText: "Send Merchant Order via WhatsApp",
         targetNumber: "60123456789"
-      }
+      },
+      themeAccent: "emerald", // Default for this template
+      featuresSection: [ // Example features section
+        {
+          title: "Seamless Ordering",
+          description: "Customers can place orders directly via WhatsApp with just a few taps.",
+        },
+        {
+          title: "Fast Deployment",
+          description: "Get your store online in minutes, no coding required.",
+        },
+                {
+          title: "Mobile Optimized",
+          description: "Stunning design and performance on all mobile devices.",
+        },
+      ],
     }
   },
   {
@@ -64,7 +84,8 @@ const PREBUILT_TEMPLATES: WebTemplate[] = [
         promptTitle: "Get a Free Consultation Invoice",
         buttonText: "Connect with Local Specialist",
         targetNumber: "60198765432"
-      }
+      },
+      themeAccent: "blue" // Default for this template
     }
   },
   {
@@ -74,7 +95,9 @@ const PREBUILT_TEMPLATES: WebTemplate[] = [
     description: "Advanced dynamic shell layout that uses our core AI agent matrix to auto-generate personalized branding assets and targeted copywriting.",
     features: ["AI Copywriting Generator", "Unlimited Dynamic Sections", "Ad-Free Ecosystem Access"],
     isPremium: true,
-    layout_data: {}
+    layout_data: {
+      themeAccent: "purple" // Default for premium template
+    }
   },
 ];
 // End: Mock Template Architecture Definitions
@@ -91,6 +114,13 @@ const StatCard: React.FC<StatCardProps> = ({ title, value }) => (
     <p className="text-2xl sm:text-3xl font-extrabold text-white">{value}</p>
   </div>
 );
+
+// New type for deployed sites list
+interface ActiveDeploymentItem {
+  subdomain: string;
+  created_at: string;
+  seo_title: string;
+}
 // End: Component Local Type Definitions
 
 // Start: Merchant Workspace Dashboard Component
@@ -105,17 +135,50 @@ export default function DashboardPage() {
   const [isDeploying, setIsDeploying] = useState<boolean>(false);
   const [deploymentStatusMessage, setDeploymentStatusMessage] = useState<string | null>(null);
 
+  // Start: New State Variables for Site Management
+  const [totalActiveSitesCount, setTotalActiveSitesCount] = useState<number | null>(null);
+  const [activeDeployments, setActiveDeployments] = useState<ActiveDeploymentItem[]>([]);
+  // End: New State Variables for Site Management
+
+  // Start: New State Variables for Subdomain Checker
+  const [customSubdomain, setCustomSubdomain] = useState<string>("");
+  const [isSubdomainValidAndAvailable, setIsSubdomainValidAndAvailable] = useState<boolean>(false);
+  // End: New State Variables for Subdomain Checker
+
+  // Start: New State Variable for Theme Accent
+  const [selectedThemeAccent, setSelectedThemeAccent] = useState<'blue' | 'purple' | 'emerald'>('blue');
+  // End: New State Variable for Theme Accent
+
   useEffect(() => {
-    const verifyUserSession = async () => {
+    // Start: User Session Verification and Data Fetching Lifecycle
+    const verifyUserSessionAndFetchData = async () => {
+      setIsDataLoading(true); // Ensure loading state is true while fetching everything
       const { data: { session }, error } = await supabase.auth.getSession();
       if (error || !session) {
         router.push("/auth");
       } else {
         setUserProfile(session.user);
+
+        // Fetch active sites count
+        const { count: sitesCount, error: countError } = await getUserActiveSitesCount(session.user.id);
+        if (countError) {
+          console.error("Failed to fetch active sites count:", countError.message);
+        } else {
+          setTotalActiveSitesCount(sitesCount);
+        }
+
+        // Fetch deployed sites list
+        const { data: deploymentsData, error: deploymentsError } = await getUserDeployedSites(session.user.id);
+        if (deploymentsError) {
+          console.error("Failed to fetch user deployments:", deploymentsError.message);
+        } else {
+          setActiveDeployments(deploymentsData || []);
+        }
       }
       setIsDataLoading(false);
     };
-    verifyUserSession();
+    verifyUserSessionAndFetchData();
+    // End: User Session Verification and Data Fetching Lifecycle
   }, [router]);
 
   const handleUserSignOut = async () => {
@@ -129,25 +192,46 @@ export default function DashboardPage() {
       return;
     }
 
+    // Start: Subdomain Pre-deployment Validation Check
+    if (!customSubdomain || !isSubdomainValidAndAvailable) {
+      setDeploymentStatusMessage("Error: Please enter a valid and available custom subdomain before deploying.");
+      return;
+    }
+    // End: Subdomain Pre-deployment Validation Check
+
     setIsDeploying(true);
     setDeploymentStatusMessage(null);
 
-    const randomizedSubdomain = `merchant-${Math.floor(1000 + Math.random() * 9000)}`;
-
+    // Old: randomizedSubdomain removed, now using customSubdomain
     const { data, error } = await deployMerchantWebsiteBlueprint({
       user_id: userProfile.id,
-      subdomain: randomizedSubdomain,
+      subdomain: customSubdomain, // Use the custom subdomain from the checker
       seo_title: template.name,
       seo_description: template.description,
-      whatsapp_number: template.layout_data.whatsappFormSection?.targetNumber || "60123456789",
-      layout_data: template.layout_data,
+      whatsapp_number: activePreviewJson.whatsappFormSection?.targetNumber || "60123456789", // Use activePreviewJson for live data
+      layout_data: {
+        ...activePreviewJson, // Use the live-edited activePreviewJson for all dynamic content
+        themeAccent: selectedThemeAccent, // Ensure themeAccent is always the selected one
+        featuresSection: isFeaturesSectionEnabled ? activePreviewJson.featuresSection : undefined, // Conditionally include/exclude
+      },
     });
 
     if (error) {
       setDeploymentStatusMessage(`Deployment Fault: ${error.message || "Zod validation rejection."}`);
     } else {
       setDeploymentStatusMessage(`Success! Active site node routed to: ${data.subdomain}.superpage.link`);
+      // After successful deployment, re-fetch the counts and deployments to update UI
+      if (userProfile?.id) {
+        const { count: sitesCount, error: countError } = await getUserActiveSitesCount(userProfile.id);
+        if (!countError) setTotalActiveSitesCount(sitesCount);
+
+        const { data: deploymentsData, error: deploymentsError } = await getUserDeployedSites(userProfile.id);
+        if (!deploymentsError) setActiveDeployments(deploymentsData || []);
+      }
     }
+    // Optionally clear the custom subdomain input after successful deployment
+    setCustomSubdomain("");
+    setIsSubdomainValidAndAvailable(false);
     setIsDeploying(false);
   };
 
@@ -283,11 +367,46 @@ export default function DashboardPage() {
 
         {/* Start: Stats Summary Cards */}
         <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          <StatCard title="Total Active Sites" value="12" />
+          <StatCard title="Total Active Sites" value={totalActiveSitesCount !== null ? String(totalActiveSitesCount) : "N/A"} />
           <StatCard title="Cloudflare R2 Storage" value="1.2 GB / 10 GB" />
           <StatCard title="AI Tokens Used" value="45,200 tokens" />
         </section>
         {/* End: Stats Summary Cards */}
+
+        {/* Start: Active Merchant Deployments List */}
+        <section className="space-y-6">
+          <h3 className="text-xs font-bold uppercase tracking-widest text-slate-500">Active Merchant Deployments</h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {activeDeployments.length > 0 ? (
+              activeDeployments.map((deployment) => (
+                <a
+                  key={deployment.subdomain}
+                  href={`https://${deployment.subdomain}.superpage.link`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="bg-slate-900 border border-slate-800 rounded-2xl p-5 hover:border-blue-500 transition-all flex flex-col justify-between group"
+                >
+                  <div>
+                    <h4 className="text-sm font-bold text-white group-hover:text-blue-400 transition-colors">
+                      {deployment.seo_title || "Untitled Site"}
+                    </h4>
+                    <p className="text-xs text-slate-400 mt-1">
+                      {deployment.subdomain}.superpage.link
+                    </p>
+                  </div>
+                  <div className="text-[10px] text-slate-500 mt-3 border-t border-slate-950 pt-3">
+                    Deployed: {new Date(deployment.created_at).toLocaleDateString()}
+                  </div>
+                </a>
+              ))
+            ) : (
+              <div className="col-span-full text-center py-8 text-slate-500 text-sm">
+                No active deployments found. Deploy a blueprint to see your sites here!
+              </div>
+            )}
+          </div>
+        </section>
+        {/* End: Active Merchant Deployments List */}
 
         {/* Start: Workspace Tools Section */}
         <div className="space-y-6">
@@ -307,6 +426,202 @@ export default function DashboardPage() {
           <SelfHealingEngine currentUserEmail={userProfile?.email || ""} onRepairedJsonInject={setActivePreviewJson} />
           {/* End: Gemini Self-Healing AI Engine Interface UI */}
 
+          {/* Start: Premium Color Palette Selector */}
+          <div className="space-y-4">
+            <h4 className="text-sm font-semibold text-slate-300">Theme Accent Selector</h4>
+            <div className="flex gap-3">
+              {['blue', 'purple', 'emerald'].map((accent) => (
+                <button
+                  key={accent}
+                  onClick={() => {
+                    setSelectedThemeAccent(accent as 'blue' | 'purple' | 'emerald');
+                    setActivePreviewJson(prevJson => ({
+                      ...prevJson,
+                      themeAccent: accent,
+                    }));
+                  }}
+                  className={`w-10 h-10 rounded-full flex items-center justify-center transition-all duration-200
+                              ${accent === 'blue' ? 'bg-blue-600' : accent === 'purple' ? 'bg-purple-600' : 'bg-emerald-600'}
+                              ${selectedThemeAccent === accent ? 'ring-2 ring-offset-2 ring-offset-slate-900 ring-white' : ''}
+                              `}
+                >
+                  {selectedThemeAccent === accent && <span className="text-white text-lg">✓</span>}
+                </button>
+              ))}
+            </div>
+          </div>
+          {/* End: Premium Color Palette Selector */}
+
+          {/* Start: Live Content & Routing Configurator */}
+          <div className="space-y-4">
+            <h4 className="text-sm font-semibold text-slate-300">Live Content & Routing Configurator</h4>
+            <div className="space-y-3">
+              <label htmlFor="hero-headline" className="block text-xs font-semibold text-slate-300">Hero Headline</label>
+              <input
+                id="hero-headline"
+                type="text"
+                value={activePreviewJson.heroSection?.headline || ''}
+                onChange={(e) => setActivePreviewJson(prev => ({
+                  ...prev,
+                  heroSection: {
+                    ...(prev.heroSection || {}),
+                    headline: e.target.value
+                  }
+                }))}
+                placeholder="Enter your main hero headline"
+                className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-xs text-white focus:ring-2 focus:ring-blue-500 focus:outline-none placeholder-slate-500 transition-colors"
+              />
+            </div>
+            <div className="space-y-3">
+              <label htmlFor="hero-subheadline" className="block text-xs font-semibold text-slate-300">Hero Subheadline</label>
+              <textarea
+                id="hero-subheadline"
+                value={activePreviewJson.heroSection?.subheadline || ''}
+                onChange={(e) => setActivePreviewJson(prev => ({
+                  ...prev,
+                  heroSection: {
+                    ...(prev.heroSection || {}),
+                    subheadline: e.target.value
+                  }
+                }))}
+                placeholder="Enter your hero subheadline"
+                rows={3}
+                className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-xs text-white focus:ring-2 focus:ring-blue-500 focus:outline-none placeholder-slate-500 transition-colors resize-y"
+              />
+            </div>
+            <div className="space-y-3">
+              <label htmlFor="whatsapp-number" className="block text-xs font-semibold text-slate-300">WhatsApp Target Number</label>
+              <input
+                id="whatsapp-number"
+                type="text"
+                value={activePreviewJson.whatsappFormSection?.targetNumber || ''}
+                onChange={(e) => setActivePreviewJson(prev => ({
+                  ...prev,
+                  whatsappFormSection: {
+                    ...(prev.whatsappFormSection || {}),
+                    targetNumber: e.target.value
+                  }
+                }))}
+                placeholder="e.g., 60123456789 (include country code)"
+                className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-xs text-white focus:ring-2 focus:ring-blue-500 focus:outline-none placeholder-slate-500 transition-colors"
+              />
+            </div>
+            <div className="space-y-3">
+              <label htmlFor="whatsapp-button-text" className="block text-xs font-semibold text-slate-300">WhatsApp Button Text</label>
+              <input
+                id="whatsapp-button-text"
+                type="text"
+                value={activePreviewJson.whatsappFormSection?.buttonText || ''}
+                onChange={(e) => setActivePreviewJson(prev => ({
+                  ...prev,
+                  whatsappFormSection: {
+                    ...(prev.whatsappFormSection || {}),
+                    buttonText: e.target.value
+                  }
+                }))}
+                placeholder="e.g., Send Merchant Order via WhatsApp"
+                className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-xs text-white focus:ring-2 focus:ring-blue-500 focus:outline-none placeholder-slate-500 transition-colors"
+              />
+            </div>
+          </div>
+          {/* End: Live Content & Routing Configurator */}
+
+          {/* Start: Dynamic Section Matrix Block Injector */}
+          <div className="space-y-4">
+            <h4 className="text-sm font-semibold text-slate-300">Dynamic Section Matrix Block Injector</h4>
+            
+            <div className="flex items-center justify-between p-3 bg-slate-900 border border-slate-800 rounded-xl">
+              <span className="text-xs font-medium text-slate-300">Enable Features Section</span>
+              <label htmlFor="features-toggle" className="relative inline-flex items-center cursor-pointer">
+                <input
+                  type="checkbox"
+                  id="features-toggle"
+                  className="sr-only peer"
+                  checked={isFeaturesSectionEnabled}
+                  onChange={(e) => {
+                    const isChecked = e.target.checked;
+                    setIsFeaturesSectionEnabled(isChecked);
+                    setActivePreviewJson(prev => ({
+                      ...prev,
+                      featuresSection: isChecked ? (prev.featuresSection || []) : undefined,
+                    }));
+                  }}
+                />
+                <div className="w-11 h-6 bg-slate-700 rounded-full peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-blue-500 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+              </label>
+            </div>
+
+            {isFeaturesSectionEnabled && (
+              <div className="space-y-4 p-3 bg-slate-900 border border-slate-800 rounded-xl">
+                <h5 className="text-xs font-semibold text-slate-300 mb-2">Configure Feature Cards</h5>
+                {(activePreviewJson.featuresSection as Array<{ title: string; description: string; }>)?.map((feature, index) => (
+                  <div key={index} className="space-y-3 p-3 bg-slate-950 border border-slate-800 rounded-xl">
+                    <label htmlFor={`feature-title-${index}`} className="block text-xs font-semibold text-slate-400">Feature {index + 1} Title</label>
+                    <input
+                      id={`feature-title-${index}`}
+                      type="text"
+                      value={feature.title || ''}
+                      onChange={(e) => {
+                        const newFeatures = [...(activePreviewJson.featuresSection || [])];
+                        newFeatures[index] = { ...newFeatures[index], title: e.target.value };
+                        setActivePreviewJson(prev => ({
+                          ...prev,
+                          featuresSection: newFeatures,
+                        }));
+                      }}
+                      placeholder={`Enter title for feature ${index + 1}`}
+                      className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-xs text-white focus:ring-2 focus:ring-blue-500 focus:outline-none placeholder-slate-500 transition-colors"
+                    />
+                    <label htmlFor={`feature-description-${index}`} className="block text-xs font-semibold text-slate-400 mt-3">Feature {index + 1} Description</label>
+                    <textarea
+                      id={`feature-description-${index}`}
+                      value={feature.description || ''}
+                      onChange={(e) => {
+                        const newFeatures = [...(activePreviewJson.featuresSection || [])];
+                        newFeatures[index] = { ...newFeatures[index], description: e.target.value };
+                        setActivePreviewJson(prev => ({
+                          ...prev,
+                          featuresSection: newFeatures,
+                        }));
+                      }}
+                      placeholder={`Enter description for feature ${index + 1}`}
+                      rows={2}
+                      className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-xs text-white focus:ring-2 focus:ring-blue-500 focus:outline-none placeholder-slate-500 transition-colors resize-y"
+                    />
+                    <button
+                      onClick={() => {
+                        const newFeatures = (activePreviewJson.featuresSection || []).filter((_, i) => i !== index);
+                        setActivePreviewJson(prev => ({
+                          ...prev,
+                          featuresSection: newFeatures,
+                        }));
+                      }}
+                      className="mt-3 w-full bg-red-600 hover:bg-red-500 text-white font-semibold text-xs py-2 rounded-xl transition-colors"
+                    >
+                      Remove Feature
+                    </button>
+                  </div>
+                ))}
+                <button
+                  onClick={() => {
+                    setActivePreviewJson(prev => ({
+                      ...prev,
+                      featuresSection: [...(prev.featuresSection || []), { title: '', description: '' }],
+                    }));
+                  }}
+                  className="w-full bg-blue-600 hover:bg-blue-500 text-white font-semibold text-xs py-2 rounded-xl transition-colors mt-4"
+                >
+                  Add New Feature Card
+                </button>
+              </div>
+            )}
+          </div>
+          {/* End: Dynamic Section Matrix Block Injector */}
+
+          {/* Start: Analytics Simulator */}
+          <AnalyticsSimulator layoutData={activePreviewJson} />
+          {/* End: Analytics Simulator */}
+
           <div className="space-y-4">
             <h4 className="text-sm font-semibold text-slate-300">{dict.aiConsoleTitle}</h4>
             <AiConsole currentUserEmail={userProfile?.email || ""} />
@@ -314,7 +629,19 @@ export default function DashboardPage() {
         </div>
         {/* End: Workspace Tools Section */}
 
-        <div className="space-y-6">
+        {/* Start: Subdomain Configuration Section */}
+        <section className="space-y-6">
+          <div className="space-y-4">
+            <h3 className="text-sm font-bold uppercase tracking-widest text-slate-500">Subdomain Configuration</h3>
+            <SubdomainChecker onSubdomainChange={(subdomain, isValidAndAvailable) => {
+              setCustomSubdomain(subdomain);
+              setIsSubdomainValidAndAvailable(isValidAndAvailable);
+            }} />
+          </div>
+        </section>
+        {/* End: Subdomain Configuration Section */}
+
+        <section className="space-y-6">
           <div className="flex flex-col lg:flex-row lg:justify-between lg:items-center gap-4 border-b border-slate-900 pb-4">
             <div className="space-y-1">
               <h3 className="text-sm font-bold uppercase tracking-widest text-slate-500">{dict.selectBlueprint}</h3>
@@ -341,7 +668,13 @@ export default function DashboardPage() {
             {filteredTemplates.map((template) => (
               <div
                 key={template.id}
-                onClick={() => template.layout_data && setActivePreviewJson(template.layout_data)}
+                onClick={() => {
+                  if (template.layout_data) {
+                    setActivePreviewJson(template.layout_data);
+                    setSelectedThemeAccent(template.layout_data.themeAccent || 'blue'); // Set theme accent from template or default
+                    setIsFeaturesSectionEnabled(!!template.layout_data.featuresSection && template.layout_data.featuresSection.length > 0);
+                  }
+                }}
                 className="bg-slate-900 border border-slate-800 rounded-2xl p-5 sm:p-6 flex flex-col justify-between hover:border-blue-500 cursor-pointer transition-all group relative overflow-hidden shadow-xl"
               >
                 <div>
@@ -381,7 +714,7 @@ export default function DashboardPage() {
                         ? "bg-gradient-to-r from-amber-600 to-yellow-500 text-slate-950 font-bold"
                         : "bg-slate-950 hover:bg-slate-800 border border-slate-800 text-white"
                     }`}
-                    disabled={isDeploying}
+                    disabled={isDeploying || !isSubdomainValidAndAvailable} // Disable if deploying or subdomain is invalid/unavailable
                   >
                     {isDeploying ? "Deploying Node..." : template.isPremium ? "Unlock Ticket" : "Deploy Blueprint"}
                   </button>
@@ -389,7 +722,7 @@ export default function DashboardPage() {
               </div>
             ))}
           </div>
-        </div>
+        </section>
       </main>
     </div>
   );
