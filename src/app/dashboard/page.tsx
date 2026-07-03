@@ -21,7 +21,9 @@ import { localizationDictionaries, LanguageCode } from "@/config/dictionaries";
 import AnalyticsSimulator from "@/components/common/AnalyticsSimulator";
 import DeploymentHistory from "@/components/common/DeploymentHistory";
 import CommandHub from "@/components/common/CommandHub";
-import ComponentLibrary from "@/components/common/ComponentLibrary"; // New import for ComponentLibrary
+import ComponentLibrary from "@/components/common/ComponentLibrary";
+import ThemePaletteSwapper from "@/components/common/ThemePaletteSwapper"; // New import for ThemePaletteSwapper
+import ContextualTourGuide from "@/components/common/ContextualTourGuide"; // New import for ContextualTourGuide
 // End: External Backend and Component Dependency Imports
 
 // Start: Mock Template Architecture Definitions
@@ -123,7 +125,8 @@ export default function DashboardPage() {
   const [activeDeployments, setActiveDeployments] = useState<ActiveDeploymentItem[]>([]);
   const [customSubdomain, setCustomSubdomain] = useState<string>("");
   const [isSubdomainValidAndAvailable, setIsSubdomainValidAndAvailable] = useState<boolean>(false);
-  const [selectedThemeAccent, setSelectedThemeAccent] = useState<'blue' | 'purple' | 'emerald'>(initialTemplate.layout_data.themeAccent || 'blue');
+  // Using a broader type for currentThemeAccent to support new palette options
+  const [currentThemeAccent, setCurrentThemeAccent] = useState<'blue' | 'purple' | 'emerald' | 'vercel-midnight' | 'linear-purple' | 'supabase-emerald'>(initialTemplate.layout_data.themeAccent as any || 'blue');
 
   // Blueprint Navigator and TemplateGrid controlled states
   const [isFeaturesSectionEnabled, setIsFeaturesSectionEnabled] = useState<boolean>(!!initialTemplate.layout_data.featuresSection && initialTemplate.layout_data.featuresSection.length > 0);
@@ -133,6 +136,10 @@ export default function DashboardPage() {
   const [currentStorageUsedBytes, setCurrentStorageUsedBytes] = useState<number>(12582912); // Initialize storage with 12MB (12 * 1024 * 1024)
 
   const [aiRequestsUsedToday, setAiRequestsUsedToday] = useState<number>(0); // Initialize for daily AI quota
+
+  // Contextual Tour Guide states
+  const [tourStep, setTourStep] = useState<number>(0); // 0-indexed current step, -1 to hide
+  const [isTourActive, setIsTourActive] = useState<boolean>(true); // To show/hide the tour guide
 
   // Deployment Success Modal states
   const [showDeploymentSuccessModal, setShowDeploymentSuccessModal] = useState<boolean>(false);
@@ -164,10 +171,39 @@ export default function DashboardPage() {
   const handleTemplateSelect = (template: WebTemplate) => {
     setActiveTemplateId(template.id);
     setActivePreviewJson(template.layout_data);
-    setSelectedThemeAccent(template.layout_data.themeAccent || "blue");
+    // Ensure the theme accent from template is correctly typed or fallback
+    setCurrentThemeAccent(template.layout_data.themeAccent as any || "blue");
     setIsFeaturesSectionEnabled(!!template.layout_data.featuresSection && template.layout_data.featuresSection.length > 0);
     setIsPortfolioSectionEnabled(!!template.layout_data.portfolioSection && template.layout_data.portfolioSection.length > 0);
     setIsTestimonialsSectionEnabled(!!template.layout_data.testimonialsSection && template.layout_data.testimonialsSection.length > 0);
+
+    // Advance tour step if current step is 0 (Choose Template)
+    if (isTourActive && tourStep === 0) {
+      setTourStep(1);
+    }
+  };
+
+  // Handler for theme accent change from ThemePaletteSwapper
+  const handleThemeAccentChange = (accent: 'blue' | 'purple' | 'emerald' | 'vercel-midnight' | 'linear-purple' | 'supabase-emerald') => {
+    setCurrentThemeAccent(accent);
+    setActivePreviewJson((prev) => ({
+      ...prev,
+      themeAccent: accent, // Update the themeAccent in the activePreviewJson
+    }));
+  };
+
+  // Handler for advancing the tour guide step
+  const handleAdvanceTourStep = () => {
+    setTourStep((prevStep) => prevStep + 1);
+    if (tourStep === 3) { // If it's the last step
+      setIsTourActive(false); // Hide the tour after finishing
+    }
+  };
+
+  // Handler for skipping the tour
+  const handleSkipTour = () => {
+    setIsTourActive(false); // Hide the tour
+    setTourStep(steps.length); // Mark all steps as theoretically completed to ensure it stays hidden
   };
 
   // Start: ContentConfigurator Handlers
@@ -199,6 +235,23 @@ export default function DashboardPage() {
     }));
   };
   // End: ContentConfigurator Handlers
+
+  // Start: Contextual Tour Guide specific handlers for Content Configurator
+  // These will auto-advance the tour when relevant content is changed.
+  const handleUpdateHeroHeadlineWithTour = (headline: string) => {
+    handleUpdateHeroHeadline(headline);
+    if (isTourActive && tourStep === 1) { // If current step is 'Configure Text'
+      setTourStep(2);
+    }
+  };
+
+  const handleUpdateHeroSubheadlineWithTour = (subheadline: string) => {
+    handleUpdateHeroSubheadline(subheadline);
+    if (isTourActive && tourStep === 1) { // If current step is 'Configure Text'
+      setTourStep(2);
+    }
+  };
+  // End: Contextual Tour Guide specific handlers for Content Configurator
 
   // Start: BlueprintNavigator Handlers
   const handleToggleFeaturesSection = (isEnabled: boolean) => {
@@ -287,7 +340,7 @@ export default function DashboardPage() {
 
     const layoutDataToDeploy = {
       ...activePreviewJson,
-      themeAccent: selectedThemeAccent,
+      themeAccent: currentThemeAccent, // Use the current global theme accent
     };
 
     if (!isFeaturesSectionEnabled) {
@@ -410,6 +463,13 @@ export default function DashboardPage() {
         />
         {/* End: Command Hub and Onboarding Ledger HUD */}
 
+        {/* Start: Theme Palette Swapper */}
+        <ThemePaletteSwapper
+          currentThemeAccent={currentThemeAccent}
+          onThemeAccentChange={handleThemeAccentChange}
+        />
+        {/* End: Theme Palette Swapper */}
+
         {/* Start: Real-Time Order Stream Panel */}
         <section className="space-y-4">
           <h3 className="text-xs font-bold uppercase tracking-widest text-slate-500">Real-Time Order Streams Pipeline</h3>
@@ -451,8 +511,8 @@ export default function DashboardPage() {
         <section className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <ContentConfigurator
             activePreviewJson={activePreviewJson}
-            onUpdateHeroHeadline={handleUpdateHeroHeadline}
-            onUpdateHeroSubheadline={handleUpdateHeroSubheadline}
+            onUpdateHeroHeadline={handleUpdateHeroHeadlineWithTour} // Use tour-aware handler
+            onUpdateHeroSubheadline={handleUpdateHeroSubheadlineWithTour} // Use tour-aware handler
             onUpdateWhatsappTargetNumber={handleUpdateWhatsappTargetNumber}
             onUpdateWhatsappButtonText={handleUpdateWhatsappButtonText}
           />
@@ -513,6 +573,16 @@ export default function DashboardPage() {
       {showDeploymentSuccessModal && deployedSiteUrl && (
         <DeploymentSuccessModal siteUrl={deployedSiteUrl} onClose={() => setShowDeploymentSuccessModal(false)} />
       )}
+
+      {/* Start: Contextual Onboarding Tour Guide */}
+      {isTourActive && tourStep < 4 && ( // Only show if active and not finished
+        <ContextualTourGuide
+          tourStep={tourStep}
+          onAdvanceStep={handleAdvanceTourStep}
+          onSkipTour={handleSkipTour}
+        />
+      )}
+      {/* End: Contextual Onboarding Tour Guide */}
     </div>
   );
 }
