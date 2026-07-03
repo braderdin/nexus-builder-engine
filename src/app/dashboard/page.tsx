@@ -436,6 +436,7 @@ export default function DashboardPage() {
             <a href="/dashboard/billing" className="text-xs text-slate-400 hover:text-white transition-colors">Billing Hub</a>
             <a href="/dashboard/diagnostics" className="text-xs text-slate-400 hover:text-white transition-colors">Diagnostics</a>
             <a href="/dashboard/tutorial" className="text-xs text-blue-400 hover:text-blue-300 transition-colors">Official Tutorial Guide</a> {/* New: Tutorial Link */}
+            <a href="/dashboard/studios" className="text-xs text-blue-400 hover:text-blue-300 transition-colors">Nexus Visual Canvas Studio</a> {/* New: Studio Link */}
           </div>
         </div>
         <button onClick={handleUserSignOut} className="text-xs bg-slate-950 hover:bg-slate-800 border border-slate-800 text-slate-300 font-semibold px-4 py-2 rounded-xl transition-colors">
