@@ -51,6 +51,8 @@ interface DynamicRendererProps {
 }
 // End: Component Properties Architectural Definition
 
+type ThemeAccentType = 'blue' | 'purple' | 'emerald' | 'vercel-midnight' | 'linear-purple' | 'supabase-emerald';
+
 // Start: Theme Accent Class Mapping
 const themeAccentClasses = {
   blue: {
@@ -68,6 +70,22 @@ const themeAccentClasses = {
     whatsappButton: "bg-emerald-600 hover:bg-emerald-500 shadow-emerald-950",
     borderColor: "border-emerald-800",
   },
+  // New corporate-style themes for expanded palette options
+  'vercel-midnight': {
+    heroButton: "bg-slate-700 hover:bg-slate-600 shadow-slate-950",
+    whatsappButton: "bg-slate-700 hover:bg-slate-600 shadow-slate-950",
+    borderColor: "border-slate-600",
+  },
+  'linear-purple': {
+    heroButton: "bg-indigo-600 hover:bg-indigo-500 shadow-indigo-950",
+    whatsappButton: "bg-indigo-600 hover:bg-indigo-500 shadow-indigo-950",
+    borderColor: "border-indigo-800",
+  },
+  'supabase-emerald': {
+    heroButton: "bg-green-600 hover:bg-green-500 shadow-green-950",
+    whatsappButton: "bg-green-600 hover:bg-green-500 shadow-green-950",
+    borderColor: "border-green-800",
+  },
 };
 // End: Theme Accent Class Mapping
 
@@ -78,7 +96,8 @@ export default function DynamicRenderer({ layoutData, onNewOrder }: DynamicRende
   // Safe fallback assignment if JSON schema elements are missing or empty
   const hero = layoutData?.heroSection;
   const whatsappForm = layoutData?.whatsappFormSection;
-  const themeAccent = layoutData?.themeAccent || 'blue';
+  // Ensure themeAccent is one of the valid types, fallback to 'blue' if not recognized
+  const themeAccent: ThemeAccentType = (layoutData?.themeAccent as ThemeAccentType) || 'blue';
   const currentTheme = themeAccentClasses[themeAccent];
   const portfolio = layoutData?.portfolioSection;
   const testimonials = layoutData?.testimonialsSection;
