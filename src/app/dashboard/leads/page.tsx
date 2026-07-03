@@ -36,10 +36,6 @@ const MOCK_LEADS: CustomerLead[] = [
     id: "lead-def-2",
     name: "Siti Nurhaliza",
     phone: "60176543210",
-    {
-    id: "lead-def-2",
-    name: "Siti Nurhaliza",
-    phone: "60176543210",
     product: "SEO Engine Portfolio",
     value: 750.00,
     status: "processing",
@@ -361,17 +357,30 @@ export default function LeadsPage() {
               {leadsByStatus('new').map((lead) => (
                 <div
                   key={lead.id}
-                  onClick={() => setSelectedLead(lead)}
-                  className="bg-slate-800 border border-slate-700 rounded-xl p-4 cursor-pointer hover:border-blue-500 transition-all duration-200 group relative overflow-hidden"
+                  className="bg-slate-800 border border-slate-700 rounded-xl p-4 transition-all duration-200 group relative overflow-hidden"
                 >
-                  <div className="flex justify-between items-start">
-                    <div>
-                      <h4 className="font-semibold text-white group-hover:text-blue-300">{lead.name}</h4>
-                      <p className="text-xs text-slate-400">{lead.product}</p>
+                  {/* Clickable area for opening WhatsApp modal */}
+                  <div onClick={() => setSelectedLead(lead)} className="cursor-pointer">
+                    <div className="flex justify-between items-start">
+                      <div>
+                        <h4 className="font-semibold text-white group-hover:text-blue-300">{lead.name}</h4>
+                        <p className="text-xs text-slate-400">{lead.product}</p>
+                      </div>
+                      <span className="text-sm font-bold text-emerald-400">{formatCurrency(lead.value)}</span>
                     </div>
-                    <span className="text-sm font-bold text-emerald-400">{formatCurrency(lead.value)}</span>
+                    <p className="text-[10px] text-slate-500 mt-2">Added: {formatDate(lead.created_at)}</p>
                   </div>
-                  <p className="text-[10px] text-slate-500 mt-2">Added: {formatDate(lead.created_at)}</p>
+                  {/* Status transition actions */}
+                  {lead.status === 'new' && (
+                    <div className="mt-4 pt-3 border-t border-slate-700 flex justify-center">
+                      <button
+                        onClick={() => handleStatusUpdate(lead.id, 'processing', true)} // Open WhatsApp after moving to processing
+                        className="text-xs bg-blue-600 hover:bg-blue-700 text-white font-semibold px-3 py-1.5 rounded-lg transition-colors"
+                      >
+                        Start Processing
+                      </button>
+                    </div>
+                  )}
                   <div className="absolute inset-0 bg-blue-500 opacity-0 group-hover:opacity-5 transition-opacity duration-200"></div>
                 </div>
               ))}
@@ -391,17 +400,30 @@ export default function LeadsPage() {
               {leadsByStatus('processing').map((lead) => (
                 <div
                   key={lead.id}
-                  onClick={() => setSelectedLead(lead)}
-                  className="bg-slate-800 border border-slate-700 rounded-xl p-4 cursor-pointer hover:border-yellow-500 transition-all duration-200 group relative overflow-hidden"
+                  className="bg-slate-800 border border-slate-700 rounded-xl p-4 transition-all duration-200 group relative overflow-hidden"
                 >
-                  <div className="flex justify-between items-start">
-                    <div>
-                      <h4 className="font-semibold text-white group-hover:text-yellow-300">{lead.name}</h4>
-                      <p className="text-xs text-slate-400">{lead.product}</p>
+                  {/* Clickable area for opening WhatsApp modal */}
+                  <div onClick={() => setSelectedLead(lead)} className="cursor-pointer">
+                    <div className="flex justify-between items-start">
+                      <div>
+                        <h4 className="font-semibold text-white group-hover:text-yellow-300">{lead.name}</h4>
+                        <p className="text-xs text-slate-400">{lead.product}</p>
+                      </div>
+                      <span className="text-sm font-bold text-emerald-400">{formatCurrency(lead.value)}</span>
                     </div>
-                    <span className="text-sm font-bold text-emerald-400">{formatCurrency(lead.value)}</span>
+                    <p className="text-[10px] text-slate-500 mt-2">Added: {formatDate(lead.created_at)}</p>
                   </div>
-                  <p className="text-[10px] text-slate-500 mt-2">Added: {formatDate(lead.created_at)}</p>
+                  {/* Status transition actions */}
+                  {lead.status === 'processing' && (
+                    <div className="mt-4 pt-3 border-t border-slate-700 flex justify-center">
+                      <button
+                        onClick={() => handleStatusUpdate(lead.id, 'completed', true)} // Open WhatsApp after moving to completed
+                        className="text-xs bg-emerald-600 hover:bg-emerald-700 text-white font-semibold px-3 py-1.5 rounded-lg transition-colors"
+                      >
+                        Mark Complete
+                      </button>
+                    </div>
+                  )}
                   <div className="absolute inset-0 bg-yellow-500 opacity-0 group-hover:opacity-5 transition-opacity duration-200"></div>
                 </div>
               ))}
@@ -421,7 +443,7 @@ export default function LeadsPage() {
               {leadsByStatus('completed').map((lead) => (
                 <div
                   key={lead.id}
-                  onClick={() => setSelectedLead(lead)}
+                  onClick={() => setSelectedLead(lead)} // Still opens WhatsApp modal for completed leads
                   className="bg-slate-800 border border-slate-700 rounded-xl p-4 cursor-pointer hover:border-emerald-500 transition-all duration-200 group relative overflow-hidden"
                 >
                   <div className="flex justify-between items-start">
