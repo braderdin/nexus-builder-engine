@@ -6,8 +6,8 @@ import { useParams } from "next/navigation";
 // End: Core React and Navigation Dependency Imports
 
 // Start: Infrastructure and Sub-Component Engine Imports
-import { supabase } from "@/lib/supabase/client";
 import DynamicRenderer from "@/components/templates/DynamicRenderer";
+import { getMerchantWebsiteBySubdomain } from "@/lib/supabase/sites"; // New import
 // End: Infrastructure and Sub-Component Engine Imports
 
 // Start: Public Multi-Tenant Viewer Component
@@ -28,14 +28,11 @@ export default function PublicMerchantSitePage() {
 
     const fetchPublishedSitePayload = async () => {
       try {
-        // Start: Fetch site data including user_id to link to profile
-        const { data: siteQueryResult, error: siteError } = await supabase
-          .from("sites")
-          .select("layout_data, seo_title, seo_description, user_id") // Added user_id
-          .eq("subdomain", subdomain)
-          .single();
+        // Start: Fetch site data and relational profile data using the new utility function
+        const { data: siteQueryResult, error: fetchError } = await getMerchantWebsiteBySubdomain(subdomain);
 
-        if (siteError) throw siteError;
+        if (fetchError) throw fetchError;
+        if (!siteQueryResult) throw new Error("No site data found for this subdomain.");
         
         setSiteData(siteQueryResult);
         
@@ -44,27 +41,13 @@ export default function PublicMerchantSitePage() {
           document.title = siteQueryResult.seo_title;
         }
 
-        // Start: Fetch merchant profile to determine premium status
-        if (siteQueryResult.user_id) {
-          const { data: profileQueryResult, error: profileError } = await supabase
-            .from("profiles")
-            .select("is_premium")
-            .eq("id", siteQueryResult.user_id)
-            .single();
-
-          if (profileError) {
-            console.error("Error fetching merchant profile:", profileError.message);
-            setIsPremium(false); // Revert to non-premium if profile fetch fails
-          } else {
-            setIsPremium(profileQueryResult?.is_premium || false);
-          }
-        } else {
-          setIsPremium(false); // Revert to non-premium if user_id is missing
-        }
-        // End: Fetch merchant profile to determine premium status
+        // Set premium status directly from the fetched data
+        setIsPremium(siteQueryResult.is_premium);
 
       } catch (fetchError: any) {
-        setErrorState(fetchError.message || "Target site configuration deployment missing.");
+        console.error("Error fetching site data:", fetchError.message);
+        setErrorState(fetchError.message || "Target site configuration deployment missing or data error.");
+        setIsPremium(false); // Ensure ads are shown if there's any fetch error
       } finally {
         setIsFetching(false);
       }

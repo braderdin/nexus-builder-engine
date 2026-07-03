@@ -47,3 +47,38 @@ export const deployMerchantWebsiteBlueprint = async (
   return { data, error };
 };
 // End: Core Merchant Site Deployment Controller
+
+// Start: Get Merchant Website By Subdomain Controller
+/**
+ * Queries the public.sites table and retrieves the fluid layout_data JSONB payload
+ * along with its relational owner profile data, specifically the is_premium status.
+ */
+export const getMerchantWebsiteBySubdomain = async (
+  subdomain: string
+): Promise<{ data: any | null; error: any | null }> => {
+  const { data, error } = await supabase
+    .from("sites")
+    .select(
+      `
+      layout_data,
+      seo_title,
+      seo_description,
+      profiles (is_premium)
+      `
+    )
+    .eq("subdomain", subdomain)
+    .single();
+
+  if (error) {
+    return { data: null, error };
+  }
+
+  // Flatten the profile data for easier access
+  const siteDataWithPremium = {
+    ...data,
+    is_premium: data.profiles?.is_premium || false,
+  };
+
+  return { data: siteDataWithPremium, error: null };
+};
+// End: Get Merchant Website By Subdomain Controller
