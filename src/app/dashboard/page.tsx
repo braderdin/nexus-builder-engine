@@ -7,7 +7,8 @@ import { useRouter } from "next/navigation";
 
 // Start: External Backend, Component, and Localization Dependency Imports
 import { supabase } from "@/lib/supabase/client";
-import { deployMerchantWebsiteBlueprint, getUserActiveSitesCount, getUserDeployedSites } from "@/lib/supabase/sites";
+import { getUserActiveSitesCount, getUserDeployedSites } from "@/lib/supabase/sites";
+import { updateMerchantSiteConfiguration } from "@/app/dashboard/actions"; // Import the new server action
 import AiConsole from "@/components/common/AiConsole";
 import DynamicRenderer, { CustomerOrder } from "@/components/templates/DynamicRenderer";
 import ImageGenerator from "@/components/common/ImageGenerator";
@@ -277,19 +278,29 @@ export default function DashboardPage() {
       return;
     }
     setIsDeploying(true);
-    const { data, error } = await deployMerchantWebsiteBlueprint({
-      user_id: userProfile.id,
+
+    const layoutDataToDeploy = {
+      ...activePreviewJson,
+      themeAccent: selectedThemeAccent,
+    };
+
+    if (!isFeaturesSectionEnabled) {
+      delete layoutDataToDeploy.featuresSection;
+    }
+    if (!isPortfolioSectionEnabled) {
+      delete layoutDataToDeploy.portfolioSection;
+    }
+    if (!isTestimonialsSectionEnabled) {
+      delete layoutDataToDeploy.testimonialsSection;
+    }
+
+    const { data, error } = await updateMerchantSiteConfiguration({
+      userId: userProfile.id,
       subdomain: customSubdomain,
-      seo_title: template.name,
-      seo_description: template.description,
-      whatsapp_number: activePreviewJson.whatsappFormSection?.targetNumber || "60123456789",
-      layout_data: {
-        ...activePreviewJson,
-        themeAccent: selectedThemeAccent,
-        featuresSection: isFeaturesSectionEnabled ? activePreviewJson.featuresSection : undefined,
-        portfolioSection: isPortfolioSectionEnabled ? activePreviewJson.portfolioSection : undefined,
-        testimonialsSection: isTestimonialsSectionEnabled ? activePreviewJson.testimonialsSection : undefined,
-      },
+      seoTitle: template.name, // Using template name for initial SEO title
+      seoDescription: template.description, // Using template description for initial SEO description
+      whatsappNumber: activePreviewJson.whatsappFormSection?.targetNumber || "60123456789",
+      layoutData: layoutDataToDeploy,
     });
 
     if (!error && data) {
@@ -298,6 +309,11 @@ export default function DashboardPage() {
       setShowDeploymentSuccessModal(true);
       setCustomSubdomain(""); // Reset subdomain input field
       setIsSubdomainValidAndAvailable(false); // Reset subdomain validation
+
+      // Refresh active deployments list
+      const { data: updatedDeploymentsData } = await getUserDeployedSites(userProfile.id);
+      setActiveDeployments(updatedDeploymentsData || []);
+
     } else if (error) {
       setDeploymentStatusMessage(`Deployment Error: ${error.message}`);
     }
