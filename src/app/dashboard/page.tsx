@@ -15,6 +15,7 @@ import SelfHealingEngine from "@/components/common/SelfHealingEngine";
 import SubdomainChecker from "@/components/common/SubdomainChecker"; // New import: SubdomainChecker
 import { localizationDictionaries, LanguageCode } from "@/config/dictionaries";
 import AnalyticsSimulator from "@/components/common/AnalyticsSimulator"; // New import: AnalyticsSimulator
+import DeploymentHistory from "@/components/common/DeploymentHistory"; // New import: DeploymentHistory
 // End: External Backend and Component Dependency Imports
 
 // Start: Mock Template Architecture Definitions
@@ -621,6 +622,10 @@ export default function DashboardPage() {
           {/* Start: Analytics Simulator */}
           <AnalyticsSimulator layoutData={activePreviewJson} />
           {/* End: Analytics Simulator */}
+
+          {/* Start: Deployment History Log */}
+          <DeploymentHistory activeDeployments={activeDeployments} />
+          {/* End: Deployment History Log */}
 
           <div className="space-y-4">
             <h4 className="text-sm font-semibold text-slate-300">{dict.aiConsoleTitle}</h4>
