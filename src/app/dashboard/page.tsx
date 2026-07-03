@@ -326,7 +326,26 @@ export default function DashboardPage() {
               </div>
             </div>
           </div>
+          </div>
           {/* End: Linear/Vercel Hover Micro-Menu Architecture */}
+
+          {/* Start: Marketplace Add-ons Link */}
+          <a
+            href="/dashboard/marketplace"
+            className="text-xs font-medium text-slate-400 hover:text-white transition-colors px-3 py-2 rounded-lg"
+          >
+            Marketplace Add-ons
+          </a>
+          {/* End: Marketplace Add-ons Link */}
+
+          {/* Start: Customer Leads Pipeline Link */}
+          <a
+            href="/dashboard/leads"
+            className="text-xs font-medium text-slate-400 hover:text-white transition-colors px-3 py-2 rounded-lg"
+          >
+            Customer Leads Pipeline
+          </a>
+          {/* End: Customer Leads Pipeline Link */}
 
           <button
             onClick={handleUserSignOut}
@@ -397,6 +416,34 @@ export default function DashboardPage() {
           <StatCard title="AI Tokens Used" value="45,200 tokens" />
         </section>
         {/* End: Stats Summary Cards */}
+
+        {/* Start: Real-Time Order Streams Pipeline */}
+        <section className="space-y-6">
+          <h3 className="text-sm font-bold uppercase tracking-widest text-slate-500">Real-Time Order Streams Pipeline</h3>
+          <div className="bg-slate-900 border border-slate-800 rounded-xl p-0 overflow-hidden shadow-2xl">
+            {customerOrders.length === 0 ? (
+              <p className="text-sm text-slate-500 text-center py-8">No active orders yet. Simulate an order below!</p>
+            ) : (
+              <div className="divide-y divide-slate-800">
+                <div className="grid grid-cols-3 text-xs font-semibold uppercase tracking-wider text-slate-400 px-4 py-3 border-b border-slate-800">
+                  <span>Client</span>
+                  <span>Product</span>
+                  <span className="text-right">Time</span>
+                </div>
+                {customerOrders.map((order) => (
+                  <div key={order.id} className="grid grid-cols-3 text-sm text-white px-4 py-3 hover:bg-slate-800/50 transition-colors">
+                    <span className="truncate pr-2">{order.clientName}</span>
+                    <span className="text-slate-300 truncate pr-2">{order.product.name} (RM {order.product.price.toFixed(2)})</span>
+                    <span className="text-right text-slate-500 text-xs">
+                      {new Date(order.timestamp).toLocaleTimeString('en-MY', { hour: '2-digit', minute: '2-digit' })}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </section>
+        {/* End: Real-Time Order Streams Pipeline */}
 
         {/* Start: Active Merchant Deployments List */}
         <section className="space-y-6">
@@ -642,6 +689,292 @@ export default function DashboardPage() {
             )}
           </div>
           {/* End: Dynamic Section Matrix Block Injector */}
+
+          {/* Start: Vercel-Style App Router Blueprint Navigator */}
+          <div className="space-y-4">
+            <h4 className="text-sm font-semibold text-slate-300">Vercel-Style App Router Blueprint Navigator</h4>
+
+            {/* Start: Portfolio Section Toggle & Configuration */}
+            <div className="space-y-4 p-3 bg-slate-900 border border-slate-800 rounded-xl">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-medium text-slate-300">Enable Showcase Gallery (Portfolio)</span>
+                <label htmlFor="portfolio-toggle" className="relative inline-flex items-center cursor-pointer">
+                  <input
+                    type="checkbox"
+                    id="portfolio-toggle"
+                    className="sr-only peer"
+                    checked={isPortfolioSectionEnabled}
+                    onChange={(e) => {
+                      const isChecked = e.target.checked;
+                      setIsPortfolioSectionEnabled(isChecked);
+                      setActivePreviewJson(prev => ({
+                        ...prev,
+                        portfolioSection: isChecked ? (prev.portfolioSection || []) : undefined,
+                      }));
+                    }}
+                  />
+                  <div className="w-11 h-6 bg-slate-700 rounded-full peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-blue-500 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                </label>
+              </div>
+
+              {isPortfolioSectionEnabled && (
+                <div className="space-y-4 mt-4">
+                  <h5 className="text-xs font-semibold text-slate-300 mb-2">Configure Portfolio Items</h5>
+                  {(activePreviewJson.portfolioSection as Array<{ id: string; title: string; description: string; imageUrl: string; }>)?.map((item, index) => (
+                    <div key={item.id || index} className="space-y-3 p-3 bg-slate-950 border border-slate-800 rounded-xl">
+                      <label htmlFor={`portfolio-title-${index}`} className="block text-xs font-semibold text-slate-400">Item {index + 1} Title</label>
+                      <input
+                        id={`portfolio-title-${index}`}
+                        type="text"
+                        value={item.title || ''}
+                        onChange={(e) => {
+                          const newPortfolio = [...(activePreviewJson.portfolioSection || [])];
+                          newPortfolio[index] = { ...newPortfolio[index], title: e.target.value };
+                          setActivePreviewJson(prev => ({
+                            ...prev,
+                            portfolioSection: newPortfolio,
+                          }));
+                        }}
+                        placeholder={`Enter title for item ${index + 1}`}
+                        className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-xs text-white focus:ring-2 focus:ring-blue-500 focus:outline-none placeholder-slate-500 transition-colors"
+                      />
+                      <label htmlFor={`portfolio-description-${index}`} className="block text-xs font-semibold text-slate-400 mt-3">Item {index + 1} Description</label>
+                      <textarea
+                        id={`portfolio-description-${index}`}
+                        value={item.description || ''}
+                        onChange={(e) => {
+                          const newPortfolio = [...(activePreviewJson.portfolioSection || [])];
+                          newPortfolio[index] = { ...newPortfolio[index], description: e.target.value };
+                          setActivePreviewJson(prev => ({
+                            ...prev,
+                            portfolioSection: newPortfolio,
+                          }));
+                        }}
+                        placeholder={`Enter description for item ${index + 1}`}
+                        rows={2}
+                        className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-xs text-white focus:ring-2 focus:ring-blue-500 focus:outline-none placeholder-slate-500 transition-colors resize-y"
+                      />
+                      <label htmlFor={`portfolio-imageUrl-${index}`} className="block text-xs font-semibold text-slate-400 mt-3">Item {index + 1} Image URL</label>
+                      <input
+                        id={`portfolio-imageUrl-${index}`}
+                        type="text"
+                        value={item.imageUrl || ''}
+                        onChange={(e) => {
+                          const newPortfolio = [...(activePreviewJson.portfolioSection || [])];
+                          newPortfolio[index] = { ...newPortfolio[index], imageUrl: e.target.value };
+                          setActivePreviewJson(prev => ({
+                            ...prev,
+                            portfolioSection: newPortfolio,
+                          }));
+                        }}
+                        placeholder={`Enter image URL for item ${index + 1}`}
+                        className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-xs text-white focus:ring-2 focus:ring-blue-500 focus:outline-none placeholder-slate-500 transition-colors"
+                      />
+                      <button
+                        onClick={() => {
+                          const newPortfolio = (activePreviewJson.portfolioSection || []).filter((_, i) => i !== index);
+                          setActivePreviewJson(prev => ({
+                            ...prev,
+                            portfolioSection: newPortfolio,
+                          }));
+                        }}
+                        className="mt-3 w-full bg-red-600 hover:bg-red-500 text-white font-semibold text-xs py-2 rounded-xl transition-colors"
+                      >
+                        Remove Item
+                      </button>
+                    </div>
+                  ))}
+                  <div className="space-y-3 p-3 bg-slate-950 border border-slate-800 rounded-xl">
+                    <h5 className="text-xs font-semibold text-slate-300 mb-2">Add New Portfolio Item</h5>
+                    <label htmlFor="new-portfolio-title" className="block text-xs font-semibold text-slate-400">New Item Title</label>
+                    <input
+                      id="new-portfolio-title"
+                      type="text"
+                      value={newPortfolioItem.title}
+                      onChange={(e) => setNewPortfolioItem(prev => ({ ...prev, title: e.target.value }))}
+                      placeholder="Enter title for new item"
+                      className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-xs text-white focus:ring-2 focus:ring-blue-500 focus:outline-none placeholder-slate-500 transition-colors"
+                    />
+                    <label htmlFor="new-portfolio-description" className="block text-xs font-semibold text-slate-400 mt-3">New Item Description</label>
+                    <textarea
+                      id="new-portfolio-description"
+                      value={newPortfolioItem.description}
+                      onChange={(e) => setNewPortfolioItem(prev => ({ ...prev, description: e.target.value }))}
+                      placeholder="Enter description for new item"
+                      rows={2}
+                      className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-xs text-white focus:ring-2 focus:ring-blue-500 focus:outline-none placeholder-slate-500 transition-colors resize-y"
+                    />
+                    <label htmlFor="new-portfolio-imageUrl" className="block text-xs font-semibold text-slate-400 mt-3">New Item Image URL</label>
+                    <input
+                      id="new-portfolio-imageUrl"
+                      type="text"
+                      value={newPortfolioItem.imageUrl}
+                      onChange={(e) => setNewPortfolioItem(prev => ({ ...prev, imageUrl: e.target.value }))}
+                      placeholder="Enter image URL for new item"
+                      className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-xs text-white focus:ring-2 focus:ring-blue-500 focus:outline-none placeholder-slate-500 transition-colors"
+                    />
+                    <button
+                      onClick={() => {
+                        if (newPortfolioItem.title || newPortfolioItem.description || newPortfolioItem.imageUrl) {
+                          setActivePreviewJson(prev => ({
+                            ...prev,
+                            portfolioSection: [...(prev.portfolioSection || []), { ...newPortfolioItem, id: `p-${Date.now()}` }],
+                          }));
+                          setNewPortfolioItem({ title: '', description: '', imageUrl: '' }); // Clear form
+                          setIsPortfolioSectionEnabled(true); // Ensure section is enabled if adding first item
+                        }
+                      }}
+                      className="w-full bg-blue-600 hover:bg-blue-500 text-white font-semibold text-xs py-2 rounded-xl transition-colors mt-4"
+                    >
+                      Add New Portfolio Item
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+            {/* End: Portfolio Section Toggle & Configuration */}
+
+            {/* Start: Testimonials Section Toggle & Configuration */}
+            <div className="space-y-4 p-3 bg-slate-900 border border-slate-800 rounded-xl">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-medium text-slate-300">Enable Client Wall (Testimonials)</span>
+                <label htmlFor="testimonials-toggle" className="relative inline-flex items-center cursor-pointer">
+                  <input
+                    type="checkbox"
+                    id="testimonials-toggle"
+                    className="sr-only peer"
+                    checked={isTestimonialsSectionEnabled}
+                    onChange={(e) => {
+                      const isChecked = e.target.checked;
+                      setIsTestimonialsSectionEnabled(isChecked);
+                      setActivePreviewJson(prev => ({
+                        ...prev,
+                        testimonialsSection: isChecked ? (prev.testimonialsSection || []) : undefined,
+                      }));
+                    }}
+                  />
+                  <div className="w-11 h-6 bg-slate-700 rounded-full peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-blue-500 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                </label>
+              </div>
+
+              {isTestimonialsSectionEnabled && (
+                <div className="space-y-4 mt-4">
+                  <h5 className="text-xs font-semibold text-slate-300 mb-2">Configure Testimonials</h5>
+                  {(activePreviewJson.testimonialsSection as Array<{ id: string; clientName: string; feedback: string; clientTitle: string; }>)?.map((item, index) => (
+                    <div key={item.id || index} className="space-y-3 p-3 bg-slate-950 border border-slate-800 rounded-xl">
+                      <label htmlFor={`testimonial-clientName-${index}`} className="block text-xs font-semibold text-slate-400">Client {index + 1} Name</label>
+                      <input
+                        id={`testimonial-clientName-${index}`}
+                        type="text"
+                        value={item.clientName || ''}
+                        onChange={(e) => {
+                          const newTestimonials = [...(activePreviewJson.testimonialsSection || [])];
+                          newTestimonials[index] = { ...newTestimonials[index], clientName: e.target.value };
+                          setActivePreviewJson(prev => ({
+                            ...prev,
+                            testimonialsSection: newTestimonials,
+                          }));
+                        }}
+                        placeholder={`Enter client name for testimonial ${index + 1}`}
+                        className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-xs text-white focus:ring-2 focus:ring-blue-500 focus:outline-none placeholder-slate-500 transition-colors"
+                      />
+                      <label htmlFor={`testimonial-clientTitle-${index}`} className="block text-xs font-semibold text-slate-400 mt-3">Client {index + 1} Title</label>
+                      <input
+                        id={`testimonial-clientTitle-${index}`}
+                        type="text"
+                        value={item.clientTitle || ''}
+                        onChange={(e) => {
+                          const newTestimonials = [...(activePreviewJson.testimonialsSection || [])];
+                          newTestimonials[index] = { ...newTestimonials[index], clientTitle: e.target.value };
+                          setActivePreviewJson(prev => ({
+                            ...prev,
+                            testimonialsSection: newTestimonials,
+                          }));
+                        }}
+                        placeholder={`Enter client title for testimonial ${index + 1}`}
+                        className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-xs text-white focus:ring-2 focus:ring-blue-500 focus:outline-none placeholder-slate-500 transition-colors"
+                      />
+                      <label htmlFor={`testimonial-feedback-${index}`} className="block text-xs font-semibold text-slate-400 mt-3">Client {index + 1} Feedback</label>
+                      <textarea
+                        id={`testimonial-feedback-${index}`}
+                        value={item.feedback || ''}
+                        onChange={(e) => {
+                          const newTestimonials = [...(activePreviewJson.testimonialsSection || [])];
+                          newTestimonials[index] = { ...newTestimonials[index], feedback: e.target.value };
+                          setActivePreviewJson(prev => ({
+                            ...prev,
+                            testimonialsSection: newTestimonials,
+                          }));
+                        }}
+                        placeholder={`Enter feedback for testimonial ${index + 1}`}
+                        rows={3}
+                        className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-xs text-white focus:ring-2 focus:ring-blue-500 focus:outline-none placeholder-slate-500 transition-colors resize-y"
+                      />
+                      <button
+                        onClick={() => {
+                          const newTestimonials = (activePreviewJson.testimonialsSection || []).filter((_, i) => i !== index);
+                          setActivePreviewJson(prev => ({
+                            ...prev,
+                            testimonialsSection: newTestimonials,
+                          }));
+                        }}
+                        className="mt-3 w-full bg-red-600 hover:bg-red-500 text-white font-semibold text-xs py-2 rounded-xl transition-colors"
+                      >
+                        Remove Testimonial
+                      </button>
+                    </div>
+                  ))}
+                  <div className="space-y-3 p-3 bg-slate-950 border border-slate-800 rounded-xl">
+                    <h5 className="text-xs font-semibold text-slate-300 mb-2">Add New Testimonial</h5>
+                    <label htmlFor="new-testimonial-clientName" className="block text-xs font-semibold text-slate-400">New Client Name</label>
+                    <input
+                      id="new-testimonial-clientName"
+                      type="text"
+                      value={newTestimonialItem.clientName}
+                      onChange={(e) => setNewTestimonialItem(prev => ({ ...prev, clientName: e.target.value }))}
+                      placeholder="Enter client name"
+                      className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-xs text-white focus:ring-2 focus:ring-blue-500 focus:outline-none placeholder-slate-500 transition-colors"
+                    />
+                    <label htmlFor="new-testimonial-clientTitle" className="block text-xs font-semibold text-slate-400 mt-3">New Client Title</label>
+                    <input
+                      id="new-testimonial-clientTitle"
+                      type="text"
+                      value={newTestimonialItem.clientTitle}
+                      onChange={(e) => setNewTestimonialItem(prev => ({ ...prev, clientTitle: e.target.value }))}
+                      placeholder="Enter client title (e.g., CEO, Founder)"
+                      className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-xs text-white focus:ring-2 focus:ring-blue-500 focus:outline-none placeholder-slate-500 transition-colors"
+                    />
+                    <label htmlFor="new-testimonial-feedback" className="block text-xs font-semibold text-slate-400 mt-3">New Feedback</label>
+                    <textarea
+                      id="new-testimonial-feedback"
+                      value={newTestimonialItem.feedback}
+                      onChange={(e) => setNewTestimonialItem(prev => ({ ...prev, feedback: e.target.value }))}
+                      placeholder="Enter client feedback"
+                      rows={3}
+                      className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-xs text-white focus:ring-2 focus:ring-blue-500 focus:outline-none placeholder-slate-500 transition-colors resize-y"
+                    />
+                    <button
+                      onClick={() => {
+                        if (newTestimonialItem.clientName || newTestimonialItem.feedback) {
+                          setActivePreviewJson(prev => ({
+                            ...prev,
+                            testimonialsSection: [...(prev.testimonialsSection || []), { ...newTestimonialItem, id: `t-${Date.now()}` }],
+                          }));
+                          setNewTestimonialItem({ clientName: '', feedback: '', clientTitle: '' }); // Clear form
+                          setIsTestimonialsSectionEnabled(true); // Ensure section is enabled if adding first item
+                        }
+                      }}
+                      className="w-full bg-blue-600 hover:bg-blue-500 text-white font-semibold text-xs py-2 rounded-xl transition-colors mt-4"
+                    >
+                      Add New Testimonial
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+            {/* End: Testimonials Section Toggle & Configuration */}
+          </div>
+          {/* End: Vercel-Style App Router Blueprint Navigator */}
 
           {/* Start: Analytics Simulator */}
           <AnalyticsSimulator layoutData={activePreviewJson} />

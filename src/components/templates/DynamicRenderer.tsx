@@ -4,6 +4,21 @@
 import React, { useState } from "react";
 // End: Core React Framework Dependency Imports
 
+// Start: Component Local Type Definitions
+export interface ProductItem {
+  id: string;
+  name: string;
+  price: number;
+}
+
+export interface CustomerOrder {
+  id: string;
+  clientName: string;
+  product: ProductItem;
+  timestamp: string;
+  status: 'Pending' | 'Completed' | 'Cancelled';
+}
+
 // Start: Component Properties Architectural Definition
 interface DynamicRendererProps {
   layoutData: {
@@ -19,9 +34,11 @@ interface DynamicRendererProps {
     };
     themeAccent?: 'blue' | 'purple' | 'emerald';
     featuresSection?: Array<{ title: string; description: string; }>;
-    portfolioSection?: Array<{ id: string; title: string; description: string; imageUrl: string; }>; // New: Portfolio section
-    testimonialsSection?: Array<{ id: string; clientName: string; feedback: string; clientTitle: string; }>; // New: Testimonials section
+    portfolioSection?: Array<{ id: string; title: string; description: string; imageUrl: string; }>;
+    testimonialsSection?: Array<{ id: string; clientName: string; feedback: string; clientTitle: string; }>;
+    products?: ProductItem[]; // New: Products for order simulator
   };
+  onNewOrder: (order: CustomerOrder) => void; // Callback to push new orders to parent state
 }
 // End: Component Properties Architectural Definition
 
@@ -46,16 +63,23 @@ const themeAccentClasses = {
 // End: Theme Accent Class Mapping
 
 // Start: Core Engine Visual Builder JSON Parser Component
-export default function DynamicRenderer({ layoutData }: DynamicRendererProps) {
-  const [activeTab, setActiveTab] = useState("Home"); // New: Local state for active tab
+export default function DynamicRenderer({ layoutData, onNewOrder }: DynamicRendererProps) {
+  const [activeTab, setActiveTab] = useState("Home");
 
   // Safe fallback assignment if JSON schema elements are missing or empty
   const hero = layoutData?.heroSection;
   const whatsappForm = layoutData?.whatsappFormSection;
-  const themeAccent = layoutData?.themeAccent || 'blue'; // Default theme accent
+  const themeAccent = layoutData?.themeAccent || 'blue';
   const currentTheme = themeAccentClasses[themeAccent];
-  const portfolio = layoutData?.portfolioSection; // New: Portfolio data
-  const testimonials = layoutData?.testimonialsSection; // New: Testimonials data
+  const portfolio = layoutData?.portfolioSection;
+  const testimonials = layoutData?.testimonialsSection;
+  const products = layoutData?.products || []; // Products for the order simulator
+
+  // Start: Order Simulator State
+  const [simulatorClientName, setSimulatorClientName] = useState<string>('');
+  const [selectedProduct, setSelectedProduct] = useState<ProductItem | null>(products[0] || null);
+  const [orderMessage, setOrderMessage] = useState<string | null>(null);
+  // End: Order Simulator State
 
   // Start: Dynamic Target WhatsApp Direct Action Link Trigger
   const handleWhatsAppRedirection = () => {
@@ -65,9 +89,35 @@ export default function DynamicRenderer({ layoutData }: DynamicRendererProps) {
   };
   // End: Dynamic Target WhatsApp Direct Action Link Trigger
 
+  // Start: Handle Order Submission (Simulator)
+  const handleSimulatorOrderSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!simulatorClientName || !selectedProduct) {
+      setOrderMessage("Please enter client name and select a product.");
+      return;
+    }
+
+    const newOrder: CustomerOrder = {
+      id: `order-${Date.now()}`,
+      clientName: simulatorClientName,
+      product: selectedProduct,
+      timestamp: new Date().toISOString(),
+      status: 'Pending',
+    };
+
+    onNewOrder(newOrder); // Send order to parent
+    setOrderMessage(`Order for ${simulatorClientName} (${selectedProduct.name}) submitted!`);
+    setSimulatorClientName(''); // Clear form
+    // setSelectedProduct(products[0] || null); // Reset product selection
+
+    setTimeout(() => setOrderMessage(null), 3000); // Clear message
+  };
+  // End: Handle Order Submission (Simulator)
+
+
   return (
     <div className="w-full bg-slate-950 text-slate-100 rounded-2xl border border-slate-900 overflow-hidden shadow-2xl">
-      
+
       {/* Start: Structural Intermediary Preview Floating Badge */}
       <div className="bg-slate-900 px-4 py-2 border-b border-slate-800 flex items-center justify-between">
         <span className="text-[10px] font-mono tracking-widest text-blue-400 uppercase font-bold">
@@ -103,6 +153,7 @@ export default function DynamicRenderer({ layoutData }: DynamicRendererProps) {
       </nav>
       {/* End: Premium Vercel/Linear-inspired Multi-Page Navigation Tab Bar */}
 
+      {/* Start: Home Tab Content */}
       {activeTab === "Home" && (
         <>
           {/* Start: Dynamic Parsed Hero Layout Section Component */}
@@ -156,8 +207,8 @@ export default function DynamicRenderer({ layoutData }: DynamicRendererProps) {
                 </h2>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                   {layoutData.featuresSection.map((feature, index) => (
-                    <div 
-                      key={index} 
+                    <div
+                      key={index}
                       className={`bg-slate-900 border ${currentTheme.borderColor} rounded-2xl p-6 shadow-xl space-y-3 transition-colors hover:border-blue-500`}
                     >
                       <h3 className="text-base font-bold text-white">
@@ -173,9 +224,71 @@ export default function DynamicRenderer({ layoutData }: DynamicRendererProps) {
             </section>
           )}
           {/* End: Dynamic Parsed Features Grid Section Component */}
+
+          {/* Start: Interactive Customer Order Simulator Form */}
+          {products.length > 0 && (
+            <section className="p-6 sm:p-10 border-t border-slate-900 bg-slate-900/10">
+              <div className="max-w-md mx-auto bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl space-y-5">
+                <h3 className="text-sm sm:text-base font-bold text-white tracking-tight text-center">
+                  Interactive Customer Order Simulator
+                </h3>
+                {orderMessage && (
+                  <div className="p-3 text-xs font-medium text-emerald-400 bg-emerald-950/40 border border-emerald-800 rounded-lg animate-fadeInUp">
+                    {orderMessage}
+                  </div>
+                )}
+                <form onSubmit={handleSimulatorOrderSubmit} className="space-y-4">
+                  <div>
+                    <label htmlFor="client-name" className="block text-xs font-semibold text-slate-400 mb-2">
+                      Client Name
+                    </label>
+                    <input
+                      id="client-name"
+                      type="text"
+                      value={simulatorClientName}
+                      onChange={(e) => setSimulatorClientName(e.target.value)}
+                      placeholder="e.g., Jane Doe"
+                      className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-xs text-white focus:ring-2 focus:ring-blue-500 focus:outline-none placeholder-slate-500 transition-colors"
+                      required
+                    />
+                  </div>
+                  <div>
+                    <label htmlFor="product-select" className="block text-xs font-semibold text-slate-400 mb-2">
+                      Select Product
+                    </label>
+                    <select
+                      id="product-select"
+                      value={selectedProduct?.id || ''}
+                      onChange={(e) => {
+                        const product = products.find(p => p.id === e.target.value);
+                        setSelectedProduct(product || null);
+                      }}
+                      className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-xs text-white focus:ring-2 focus:ring-blue-500 focus:outline-none appearance-none pr-8 transition-colors"
+                      required
+                    >
+                      {products.map((product) => (
+                        <option key={product.id} value={product.id} className="bg-slate-900 text-white">
+                          {product.name} (RM {product.price.toFixed(2)})
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <button
+                    type="submit"
+                    className="w-full text-white font-bold text-xs py-3.5 rounded-xl transition-all shadow-lg bg-emerald-600 hover:bg-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                  >
+                    Submit Order
+                  </button>
+                </form>
+              </div>
+            </section>
+          )}
+          {/* End: Interactive Customer Order Simulator Form */}
         </>
       )}
+      {/* End: Home Tab Content */}
 
+      {/* Start: Showcase Gallery Tab Content */}
       {activeTab === "Showcase Gallery" && (
         <section className="px-6 py-12 sm:py-20 bg-slate-900/10 border-t border-slate-900">
           <div className="max-w-6xl mx-auto">
@@ -185,17 +298,17 @@ export default function DynamicRenderer({ layoutData }: DynamicRendererProps) {
             {portfolio && portfolio.length > 0 ? (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {portfolio.map((item) => (
-                  <div 
-                    key={item.id} 
+                  <div
+                    key={item.id}
                     className={`bg-slate-900 border ${currentTheme.borderColor} rounded-2xl p-4 shadow-xl group relative overflow-hidden transition-all duration-300 hover:scale-[1.02]`}
                   >
                     <div className="absolute inset-0 bg-gradient-to-br from-transparent via-transparent to-blue-900/50 opacity-0 group-hover:opacity-100 transition-opacity duration-300 z-10"></div>
                     {item.imageUrl && (
                       <div className="relative w-full h-40 rounded-xl overflow-hidden mb-4 border border-slate-800">
-                        <img 
-                          src={item.imageUrl} 
-                          alt={item.title} 
-                          className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105" 
+                        <img
+                          src={item.imageUrl}
+                          alt={item.title}
+                          className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
                         />
                         <div className="absolute inset-0 bg-gradient-to-t from-slate-950/70 to-transparent"></div>
                       </div>
@@ -215,7 +328,9 @@ export default function DynamicRenderer({ layoutData }: DynamicRendererProps) {
           </div>
         </section>
       )}
+      {/* End: Showcase Gallery Tab Content */}
 
+      {/* Start: Client Wall Tab Content */}
       {activeTab === "Client Wall" && (
         <section className="px-6 py-12 sm:py-20 bg-slate-900/10 border-t border-slate-900">
           <div className="max-w-4xl mx-auto">
@@ -225,8 +340,8 @@ export default function DynamicRenderer({ layoutData }: DynamicRendererProps) {
             {testimonials && testimonials.length > 0 ? (
               <div className="space-y-6">
                 {testimonials.map((item) => (
-                  <div 
-                    key={item.id} 
+                  <div
+                    key={item.id}
                     className={`bg-slate-900 border ${currentTheme.borderColor} rounded-2xl p-6 shadow-xl space-y-3 transition-colors hover:border-blue-500`}
                   >
                     <p className="text-sm italic text-slate-300 leading-relaxed">
@@ -250,6 +365,7 @@ export default function DynamicRenderer({ layoutData }: DynamicRendererProps) {
           </div>
         </section>
       )}
+      {/* End: Client Wall Tab Content */}
 
     </div>
   );
