@@ -311,7 +311,7 @@ export default function DashboardPage() {
               <button className="text-xs font-medium text-slate-400 hover:text-white transition-colors flex items-center gap-1 cursor-default">
                 Ecosystem <span className="text-[9px] opacity-50 group-hover:rotate-180 transition-transform duration-200">▼</span>
               </button>
-              
+
               <div className="absolute left-0 top-full pt-2 w-80 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 transform scale-95 group-hover:scale-100 z-50">
                 <div className="bg-slate-900 border border-slate-800 rounded-2xl p-4 shadow-2xl grid grid-cols-1 gap-2">
                   <div className="p-2 hover:bg-slate-950 rounded-xl transition-colors group/item">
@@ -325,28 +325,25 @@ export default function DashboardPage() {
                 </div>
               </div>
             </div>
-          </div>
+
+            {/* Marketplace Add-ons Link (Desktop) */}
+            <a
+              href="/dashboard/marketplace"
+              className="text-xs font-medium text-slate-400 hover:text-white transition-colors px-3 py-2 rounded-lg"
+            >
+              Marketplace Add-ons
+            </a>
+            {/* Customer Leads Pipeline Link (Desktop) */}
+            <a
+              href="/dashboard/leads"
+              className="text-xs font-medium text-slate-400 hover:text-white transition-colors px-3 py-2 rounded-lg"
+            >
+              Customer Leads Pipeline
+            </a>
           </div>
           {/* End: Linear/Vercel Hover Micro-Menu Architecture */}
 
-          {/* Start: Marketplace Add-ons Link */}
-          <a
-            href="/dashboard/marketplace"
-            className="text-xs font-medium text-slate-400 hover:text-white transition-colors px-3 py-2 rounded-lg"
-          >
-            Marketplace Add-ons
-          </a>
-          {/* End: Marketplace Add-ons Link */}
-
-          {/* Start: Customer Leads Pipeline Link */}
-          <a
-            href="/dashboard/leads"
-            className="text-xs font-medium text-slate-400 hover:text-white transition-colors px-3 py-2 rounded-lg"
-          >
-            Customer Leads Pipeline
-          </a>
-          {/* End: Customer Leads Pipeline Link */}
-
+          {/* Disconnect button for small screens (Mobile Only) */}
           <button
             onClick={handleUserSignOut}
             className="sm:hidden text-[11px] bg-slate-950 hover:bg-slate-800 border border-slate-800 text-slate-300 font-semibold px-3 py-1.5 rounded-lg"
