@@ -11,7 +11,7 @@ interface WebTemplate {
   features: string[];
   isPremium: boolean;
   layout_data: Record<string, any> & {
-    themeAccent?: 'blue' | 'purple' | 'emerald';
+    themeAccent?: 'blue' | 'purple' | 'emerald' | 'vercel-midnight' | 'linear-purple' | 'supabase-emerald';
     featuresSection?: Array<{ title: string; description: string; }>;
     portfolioSection?: Array<{ id: string; title: string; description: string; imageUrl: string; }>;
     testimonialsSection?: Array<{ id: string; clientName: string; feedback: string; clientTitle: string; }>;

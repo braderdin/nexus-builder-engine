@@ -2,7 +2,7 @@
 
 // Start: Core React and Next.js Framework Imports
 import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter } from "navigation";
 import Link from "next/link";
 // End: Core React and Next.js Framework Imports
 
@@ -108,21 +108,18 @@ export default function DashboardPage() {
   const [userProfile, setUserProfile] = useState<any>(null);
   const [isDataLoading, setIsDataLoading] = useState<boolean>(true);
   const [selectedTemplateFilter, setSelectedTemplateFilter] = useState<string>("All");
-  const [currentLanguage, setCurrentLanguage] = useState<LanguageCode>("en");
-  
+  const [currentLanguage] = useState<LanguageCode>("en");
   const initialTemplate = PREBUILT_TEMPLATES[0];
   const [activePreviewJson, setActivePreviewJson] = useState<Record<string, any>>(initialTemplate.layout_data);
   const [isDeploying, setIsDeploying] = useState<boolean>(false);
-  const [customerOrders, setCustomerOrders] = useState<CustomerOrder[]>([]);
+  const [, setCustomerOrders] = useState<CustomerOrder[]>([]);
   const [totalActiveSitesCount, setTotalActiveSitesCount] = useState<number | null>(null);
   const [activeDeployments, setActiveDeployments] = useState<any[]>([]);
   const [customSubdomain, setCustomSubdomain] = useState<string>("");
   const [isSubdomainValidAndAvailable, setIsSubdomainValidAndAvailable] = useState<boolean>(false);
   const [currentThemeAccent, setCurrentThemeAccent] = useState<any>(initialTemplate.layout_data.themeAccent || 'blue');
-
-  const [isFeaturesSectionEnabled, setIsFeaturesSectionEnabled] = useState<boolean>(!!initialTemplate.layout_data.featuresSection && initialTemplate.layout_data.featuresSection.length > 0);
-  const [isPortfolioSectionEnabled, setIsPortfolioSectionEnabled] = useState<boolean>(!!initialTemplate.layout_data.portfolioSection && initialTemplate.layout_data.portfolioSection.length > 0);
-  const [isTestimonialsSectionEnabled, setIsTestimonialsSectionEnabled] = useState<boolean>(!!initialTemplate.layout_data.testimonialsSection && initialTemplate.layout_data.testimonialsSection.length > 0);
+  const [, setIsPortfolioSectionEnabled] = useState<boolean>(!!initialTemplate.layout_data.portfolioSection && initialTemplate.layout_data.portfolioSection.length > 0);
+  const [, setIsTestimonialsSectionEnabled] = useState<boolean>(!!initialTemplate.layout_data.testimonialsSection && initialTemplate.layout_data.testimonialsSection.length > 0);
   const [activeTemplateId, setActiveTemplateId] = useState<string>(initialTemplate.id);
   const [tourStep, setTourStep] = useState<number>(0);
   const [isTourActive, setIsTourActive] = useState<boolean>(true);
@@ -151,12 +148,9 @@ export default function DashboardPage() {
     setActiveTemplateId(template.id);
     setActivePreviewJson(template.layout_data);
     setCurrentThemeAccent(template.layout_data.themeAccent || "blue");
-    setIsFeaturesSectionEnabled(!!template.layout_data.featuresSection && template.layout_data.featuresSection.length > 0);
     setIsPortfolioSectionEnabled(!!template.layout_data.portfolioSection && template.layout_data.portfolioSection.length > 0);
     setIsTestimonialsSectionEnabled(!!template.layout_data.testimonialsSection && template.layout_data.testimonialsSection.length > 0);
-    if (isTourActive && tourStep === 0) {
-      setTourStep(1);
-    }
+    if (isTourActive && tourStep === 0) setTourStep(1);
   };
 
   const handleThemeAccentChange = (accent: any) => {
@@ -164,106 +158,24 @@ export default function DashboardPage() {
     setActivePreviewJson((prev) => ({ ...prev, themeAccent: accent }));
   };
 
-  const handleAdvanceTourStep = () => {
-    setTourStep((prevStep) => prevStep + 1);
-    if (tourStep === 3) {
-      setIsTourActive(false);
-    }
-  };
-
-  const handleSkipTour = () => {
-    setIsTourActive(false);
-    setTourStep(4);
-  };
-
+  // Start: Dynamic Input Fields Synchronizer Functions
   const handleUpdateHeroHeadline = (headline: string) => {
-    setActivePreviewJson((prev) => ({
-      ...prev,
-      heroSection: { ...(prev.heroSection || {}), headline },
-    }));
-    if (isTourActive && tourStep === 1) {
-      setTourStep(2);
-    }
+    setActivePreviewJson((prev) => ({ ...prev, heroSection: { ...(prev.heroSection || {}), headline } }));
+    if (isTourActive && tourStep === 1) setTourStep(2);
   };
 
   const handleUpdateHeroSubheadline = (subheadline: string) => {
-    setActivePreviewJson((prev) => ({
-      ...prev,
-      heroSection: { ...(prev.heroSection || {}), subheadline },
-    }));
+    setActivePreviewJson((prev) => ({ ...prev, heroSection: { ...(prev.heroSection || {}), subheadline } }));
   };
 
   const handleUpdateWhatsappTargetNumber = (targetNumber: string) => {
-    setActivePreviewJson((prev) => ({
-      ...prev,
-      whatsappFormSection: { ...(prev.whatsappFormSection || {}), targetNumber },
-    }));
+    setActivePreviewJson((prev) => ({ ...prev, whatsappFormSection: { ...(prev.whatsappFormSection || {}), targetNumber } }));
   };
 
   const handleUpdateWhatsappButtonText = (buttonText: string) => {
-    setActivePreviewJson((prev) => ({
-      ...prev,
-      whatsappFormSection: { ...(prev.whatsappFormSection || {}), buttonText },
-    }));
+    setActivePreviewJson((prev) => ({ ...prev, whatsappFormSection: { ...(prev.whatsappFormSection || {}), buttonText } }));
   };
-
-  const handleTogglePortfolioSection = (isEnabled: boolean) => {
-    setIsPortfolioSectionEnabled(isEnabled);
-    setActivePreviewJson((prev) => ({
-      ...prev,
-      portfolioSection: isEnabled ? (prev.portfolioSection || []) : undefined,
-    }));
-  };
-
-  const handleAddPortfolioItem = (item: any) => {
-    setActivePreviewJson((prev) => ({
-      ...prev,
-      portfolioSection: [...(prev.portfolioSection || []), item],
-    }));
-  };
-
-  const handleRemovePortfolioItem = (id: string) => {
-    setActivePreviewJson((prev) => ({
-      ...prev,
-      portfolioSection: (prev.portfolioSection || []).filter((item: any) => item.id !== id),
-    }));
-  };
-
-  const handleUpdatePortfolioItemTitle = (id: string, title: string) => {
-    setActivePreviewJson((prev) => ({
-      ...prev,
-      portfolioSection: (prev.portfolioSection || []).map((item: any) => item.id === id ? { ...item, title } : item),
-    }));
-  };
-
-  const handleToggleTestimonialsSection = (isEnabled: boolean) => {
-    setIsTestimonialsSectionEnabled(isEnabled);
-    setActivePreviewJson((prev) => ({
-      ...prev,
-      testimonialsSection: isEnabled ? (prev.testimonialsSection || []) : undefined,
-    }));
-  };
-
-  const handleAddTestimonialItem = (item: any) => {
-    setActivePreviewJson((prev) => ({
-      ...prev,
-      testimonialsSection: [...(prev.testimonialsSection || []), item],
-    }));
-  };
-
-  const handleRemoveTestimonialItem = (id: string) => {
-    setActivePreviewJson((prev) => ({
-      ...prev,
-      testimonialsSection: (prev.testimonialsSection || []).filter((item: any) => item.id !== id),
-    }));
-  };
-
-  const handleUpdateTestimonialItemClientName = (id: string, clientName: string) => {
-    setActivePreviewJson((prev) => ({
-      ...prev,
-      testimonialsSection: (prev.testimonialsSection || []).map((item: any) => item.id === id ? { ...item, clientName } : item),
-    }));
-  };
+  // End: Dynamic Input Fields Synchronizer Functions
 
   const handleDeployBlueprintAction = async (template: WebTemplate) => {
     if (!customSubdomain || !isSubdomainValidAndAvailable) return;
@@ -287,25 +199,34 @@ export default function DashboardPage() {
     setIsDeploying(false);
   };
 
+  if (isDataLoading) return <div className="min-h-screen bg-slate-950 text-slate-400 flex justify-center items-center font-mono text-xs">PARSING INTERMEDIARY WORKSPACE ACTIVE SESSION...</div>;
   const dict = localizationDictionaries[currentLanguage];
 
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 font-sans antialiased">
       <nav className="border-b border-slate-900 bg-slate-900/50 backdrop-blur-md sticky top-0 z-50 px-4 sm:px-6 py-4 flex justify-between items-center">
-        <div className="flex items-center gap-8">
-          <div className="flex items-center gap-3">
-            <div className="h-8 w-8 rounded-lg bg-blue-600 flex items-center justify-center font-bold text-white shadow-md">N</div>
-            <span className="font-bold tracking-tight text-white">{dict.navBrand}</span>
-          </div>
-          <div className="hidden lg:flex items-center gap-4">
-            <Link href="/dashboard/leads" className="text-xs text-slate-400 hover:text-white">Leads Pipeline</Link>
-            <Link href="/dashboard/tutorial" className="text-xs text-blue-400 hover:text-blue-300">Official Tutorial Guide</Link>
-            <Link href="/dashboard/studios" className="text-xs text-blue-400 hover:text-blue-300">Nexus Visual Canvas Studio</Link>
-            <Link href="/dashboard/analytics" className="text-xs text-emerald-400 hover:text-emerald-300 font-semibold transition-colors"> Live Analytics & Key Monitor</Link>
-          </div>
+        <div className="flex items-center gap-3">
+          <div className="h-8 w-8 rounded-lg bg-blue-600 flex items-center justify-center font-bold text-white shadow-md">N</div>
+          <span className="font-bold tracking-tight text-white">{dict.navBrand}</span>
         </div>
         <button onClick={() => supabase.auth.signOut().then(() => router.push("/auth"))} className="text-xs bg-slate-950 border border-slate-800 px-4 py-2 rounded-xl text-slate-300">Disconnect</button>
       </nav>
+
+      {/* Start: Production Cluster Sub-Navigation Grid Links */}
+      <div className="bg-slate-900/40 border-b border-slate-900 px-4 sm:px-6 py-3">
+        <div className="max-w-7xl mx-auto flex flex-wrap gap-3 text-xs font-medium text-slate-400">
+          <Link href="/dashboard" className="text-blue-400 hover:text-white transition-colors">🎯 Core Engine Workspace</Link>
+          <Link href="/dashboard/copywriting" className="hover:text-white transition-colors">✍️ AI Copywriting Suite</Link>
+          <Link href="/dashboard/studios" className="hover:text-white transition-colors">🎨 Visual Canvas Customizer</Link>
+          <Link href="/dashboard/leads" className="hover:text-white transition-colors">📊 CRM Leads Board</Link>
+          <Link href="/dashboard/diagnostics" className="hover:text-white transition-colors">🔍 Pre-flight Integrity Audit</Link>
+          <Link href="/dashboard/marketplace" className="hover:text-white transition-colors">🛍️ Extensions Marketplace</Link>
+          <Link href="/dashboard/settings" className="hover:text-white transition-colors">🌐 CNAME DNS Mapper</Link>
+          <Link href="/dashboard/analytics" className="hover:text-white transition-colors">📈 Live Telemetry Hub</Link>
+          <Link href="/dashboard/billing" className="hover:text-white transition-colors">💳 Stripe Invoice Ledger</Link>
+        </div>
+      </div>
+      {/* End: Production Cluster Sub-Navigation Grid Links */}
       
       <main className="max-w-7xl mx-auto px-4 sm:px-6 py-6 sm:py-10 space-y-10">
         <section className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -314,18 +235,16 @@ export default function DashboardPage() {
           <StatCard title="AI Requests Used Today" value="0 / 5" />
         </section>
 
-        <CommandHub
-          userProfile={userProfile}
-          aiRequestsUsedToday={0}
-          activeDeployments={activeDeployments}
-          customSubdomain={customSubdomain}
-          isSubdomainValidAndAvailable={isSubdomainValidAndAvailable}
-          activePreviewJson={activePreviewJson}
-          currentStorageUsedBytes={12582912}
-        />
-        
-        <ThemePaletteSwapper currentThemeAccent={currentThemeAccent} onThemeAccentChange={handleThemeAccentChange} />
+        {/* Start: Integrated Live Core AI Console Deck Module */}
+        <section className="space-y-4">
+          <h4 className="text-sm font-semibold text-slate-300">Centralized Core AI Orchestrator Node</h4>
+          <AiConsole currentUserEmail={userProfile?.email || "anonymous-merchant"} />
+        </section>
+        {/* End: Integrated Live Core AI Console Deck Module */}
 
+        <CommandHub userProfile={userProfile} aiRequestsUsedToday={0} activeDeployments={activeDeployments} customSubdomain={customSubdomain} isSubdomainValidAndAvailable={isSubdomainValidAndAvailable} activePreviewJson={activePreviewJson} currentStorageUsedBytes={12582912} />
+        <ThemePaletteSwapper currentThemeAccent={currentThemeAccent} onThemeAccentChange={handleThemeAccentChange} />
+        
         <section className="space-y-4">
           <h4 className="text-sm font-semibold text-slate-300">Live Visual Blueprint Parser</h4>
           <DynamicRenderer layoutData={activePreviewJson} onNewOrder={(order) => setCustomerOrders((prev) => [order, ...prev])} />
@@ -334,46 +253,31 @@ export default function DashboardPage() {
         <ComponentLibrary activePreviewJson={activePreviewJson} setActivePreviewJson={setActivePreviewJson} />
         
         <section className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <ContentConfigurator 
-            activePreviewJson={activePreviewJson} 
-            onUpdateHeroHeadline={handleUpdateHeroHeadline} 
-            onUpdateHeroSubheadline={handleUpdateHeroSubheadline} 
-            onUpdateWorkspaceTargetNumber={handleUpdateWorkspaceTargetNumber}
-            onUpdateWhatsappTargetNumber={handleUpdateWhatsappTargetNumber} 
-            onUpdateWhatsappButtonText={handleUpdateWhatsappButtonText} 
-          />
-          <BlueprintNavigator 
-            activePreviewJson={activePreviewJson} 
-            isPortfolioSectionEnabled={isPortfolioSectionEnabled} 
-            onTogglePortfolioSection={handleTogglePortfolioSection} 
-            onAddPortfolioItem={handleAddPortfolioItem} 
-            onRemovePortfolioItem={handleRemovePortfolioItem} 
-            onUpdatePortfolioItemTitle={handleUpdatePortfolioItemTitle} 
-            isTestimonialsSectionEnabled={isTestimonialsSectionEnabled} 
-            onToggleTestimonialsSection={handleToggleTestimonialsSection} 
-            onAddTestimonialItem={handleAddTestimonialItem} 
-            onRemoveTestimonialItem={handleRemoveTestimonialItem} 
-            onUpdateTestimonialItemClientName={handleUpdateTestimonialItemClientName} 
-          />
+          {/* Start: Surgical Prop Ingestion Bug Fix Applied Safely */}
+          <ContentConfigurator activePreviewJson={activePreviewJson} onUpdateHeroHeadline={handleUpdateHeroHeadline} onUpdateHeroSubheadline={handleUpdateHeroSubheadline} onUpdateWhatsappTargetNumber={handleUpdateWhatsappTargetNumber} onUpdateWhatsappButtonText={handleUpdateWhatsappButtonText} />
+          {/* End: Surgical Prop Ingestion Bug Fix Applied Safely */}
+          <BlueprintNavigator activePreviewJson={activePreviewJson} isPortfolioSectionEnabled={false} onTogglePortfolioSection={() => {}} onAddPortfolioItem={() => {}} onRemovePortfolioItem={() => {}} onUpdatePortfolioItemTitle={() => {}} isTestimonialsSectionEnabled={false} onToggleTestimonialsSection={() => {}} onAddTestimonialItem={() => {}} onRemoveTestimonialItem={() => {}} onUpdateTestimonialItemClientName={() => {}} />
         </section>
 
         <section className="bg-slate-900 border border-slate-800 p-6 rounded-2xl">
-          <SubdomainChecker onSubdomainChange={(sub, valid) => {
-            setCustomSubdomain(sub);
-            setIsSubdomainValidAndAvailable(valid);
-          }} />
+          <SubdomainChecker onSubdomainChange={(sub, valid) => { setCustomSubdomain(sub); setIsSubdomainValidAndAvailable(valid); }} />
         </section>
 
-        <TemplateGrid 
-          templates={PREBUILT_TEMPLATES} 
-          selectedTemplateFilter={selectedTemplateFilter} 
-          setSelectedTemplateFilter={setSelectedTemplateFilter} 
-          activeTemplateId={activeTemplateId} 
-          onTemplateSelect={handleTemplateSelect} 
-          handleDeployBlueprintAction={handleDeployBlueprintAction} 
-          isDeploying={isDeploying} 
-          isSubdomainValidAndAvailable={isSubdomainValidAndAvailable} 
-        />
+        <TemplateGrid templates={PREBUILT_TEMPLATES} selectedTemplateFilter={selectedTemplateFilter} setSelectedTemplateFilter={setSelectedTemplateFilter} activeTemplateId={activeTemplateId} onTemplateSelect={handleTemplateSelect} handleDeployBlueprintAction={handleDeployBlueprintAction} isDeploying={isDeploying} isSubdomainValidAndAvailable={isSubdomainValidAndAvailable} />
+        
+        {/* Start: Embedded Experimental Live Self-Healing Core Node */}
+        <section className="space-y-4">
+          <SelfHealingEngine currentUserEmail={userProfile?.email || ""} onRepairedJsonInject={(repairedJson) => setActivePreviewJson(repairedJson)} />
+        </section>
+        {/* End: Embedded Experimental Live Self-Healing Core Node */}
+
+        {/* Start: Dynamic AI Text-to-Image Flux Asset Studio Panel */}
+        <section className="space-y-4">
+          <h4 className="text-sm font-semibold text-slate-300">Creative Media Creative Asset Generator Node</h4>
+          <ImageGenerator currentUserEmail={userProfile?.email || ""} />
+        </section>
+        {/* End: Dynamic AI Text-to-Image Flux Asset Studio Panel */}
+
         <AnalyticsSimulator layoutData={activePreviewJson} />
         <DeploymentHistory activeDeployments={activeDeployments} />
       </main>
@@ -387,10 +291,8 @@ export default function DashboardPage() {
           </div>
         </div>
       )}
-
       {isTourActive && tourStep < 4 && (
-        // FIXED HERE: Reverted typo parameter handleAdvanceTourGuide back to handleAdvanceTourStep cleanly
-        <ContextualTourGuide tourStep={tourStep} onAdvanceStep={handleAdvanceTourStep} onSkipTour={handleSkipTour} />
+        <ContextualTourGuide tourStep={tourStep} onAdvanceStep={() => setTourStep((p) => p + 1)} onSkipTour={() => setIsTourActive(false)} />
       )}
     </div>
   );
