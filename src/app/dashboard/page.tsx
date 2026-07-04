@@ -35,7 +35,7 @@ interface WebTemplate {
   features: string[];
   isPremium: boolean;
   layout_data: Record<string, any> & {
-    themeAccent?: 'blue' | 'purple' | 'emerald';
+    themeAccent?: 'blue' | 'purple' | 'emerald' | 'vercel-midnight' | 'linear-purple' | 'supabase-emerald';
     featuresSection?: Array<{ title: string; description: string; }>;
     portfolioSection?: Array<{ id: string; title: string; description: string; imageUrl: string; }>;
     testimonialsSection?: Array<{ id: string; clientName: string; feedback: string; clientTitle: string; }>;
@@ -301,6 +301,7 @@ export default function DashboardPage() {
             <Link href="/dashboard/leads" className="text-xs text-slate-400 hover:text-white">Leads Pipeline</Link>
             <Link href="/dashboard/tutorial" className="text-xs text-blue-400 hover:text-blue-300">Official Tutorial Guide</Link>
             <Link href="/dashboard/studios" className="text-xs text-blue-400 hover:text-blue-300">Nexus Visual Canvas Studio</Link>
+            <Link href="/dashboard/analytics" className="text-xs text-emerald-400 hover:text-emerald-300 font-semibold transition-colors"> Live Analytics & Key Monitor</Link>
           </div>
         </div>
         <button onClick={() => supabase.auth.signOut().then(() => router.push("/auth"))} className="text-xs bg-slate-950 border border-slate-800 px-4 py-2 rounded-xl text-slate-300">Disconnect</button>
@@ -333,11 +334,11 @@ export default function DashboardPage() {
         <ComponentLibrary activePreviewJson={activePreviewJson} setActivePreviewJson={setActivePreviewJson} />
         
         <section className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* FIXED EXPLICIT PROP ACCURACY MAPPING HERE */}
           <ContentConfigurator 
             activePreviewJson={activePreviewJson} 
             onUpdateHeroHeadline={handleUpdateHeroHeadline} 
             onUpdateHeroSubheadline={handleUpdateHeroSubheadline} 
+            onUpdateWorkspaceTargetNumber={handleUpdateWorkspaceTargetNumber}
             onUpdateWhatsappTargetNumber={handleUpdateWhatsappTargetNumber} 
             onUpdateWhatsappButtonText={handleUpdateWhatsappButtonText} 
           />
@@ -388,6 +389,7 @@ export default function DashboardPage() {
       )}
 
       {isTourActive && tourStep < 4 && (
+        // FIXED HERE: Reverted typo parameter handleAdvanceTourGuide back to handleAdvanceTourStep cleanly
         <ContextualTourGuide tourStep={tourStep} onAdvanceStep={handleAdvanceTourStep} onSkipTour={handleSkipTour} />
       )}
     </div>
