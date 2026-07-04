@@ -2,7 +2,7 @@
 
 // Start: Core React and Next.js Framework Imports
 import { useState, useEffect } from "react";
-import { useRouter } from "navigation";
+import { useRouter } from "next/navigation"; // FIXED: Corrected Next.js App Router import
 import Link from "next/link";
 // End: Core React and Next.js Framework Imports
 
