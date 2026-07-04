@@ -2,39 +2,32 @@
 
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { supabase } from "@/lib/supabase/client"; // Assuming supabase client is needed for auth check
+import { supabase } from "@/lib/supabase/client";
 
-// Start: Component Local Type Definitions
 type ToneOfVoice = "Professional" | "Bold" | "Casual" | "Empathetic" | "Humorous";
 
 interface CopywritingOutput {
   headline: string;
   subheadline: string;
 }
-// End: Component Local Type Definitions
 
-// Start: AI-Generated Copywriting Suite Page Component
 export default function AICopywritingPage() {
   const router = useRouter();
   const [userProfile, setUserProfile] = useState<any>(null);
   const [isDataLoading, setIsDataLoading] = useState<boolean>(true);
 
-  // Start: Input States
   const [businessName, setBusinessName] = useState<string>("");
   const [productKeywords, setProductKeywords] = useState<string>("");
   const [toneOfVoice, setToneOfVoice] = useState<ToneOfVoice>("Professional");
-  // End: Input States
 
-  // Start: Output States with Typewriter Effect Handling
   const [generatedHeadline, setGeneratedHeadline] = useState<string>("");
   const [generatedSubheadline, setGeneratedSubheadline] = useState<string>("");
   const [isGenerating, setIsGenerating] = useState<boolean>(false);
-  // End: Output States
+  const [apiError, setApiError] = useState<string | null>(null);
 
-  // Start: Typewriter Effect Helper
   const simulateTypewriterEffect = (text: string, setter: React.Dispatch<React.SetStateAction<string>>, delay: number = 20) => {
     let i = 0;
-    setter(""); // Clear previous text instantly
+    setter("");
     const interval = setInterval(() => {
       if (i < text.length) {
         setter((prev) => prev + text.charAt(i));
@@ -44,9 +37,7 @@ export default function AICopywritingPage() {
       }
     }, delay);
   };
-  // End: Typewriter Effect Helper
 
-  // Start: User Session Verification Effect
   useEffect(() => {
     const verifyUserSession = async () => {
       setIsDataLoading(true);
@@ -61,9 +52,7 @@ export default function AICopywritingPage() {
 
     verifyUserSession();
   }, [router]);
-  // End: User Session Verification Effect
 
-  // Start: Simulate AI Generation
   const handleGenerateMarketingAssets = async () => {
     if (!businessName || !productKeywords) {
       alert("Please fill in Business Name and Product Description Keywords.");
@@ -71,51 +60,53 @@ export default function AICopywritingPage() {
     }
 
     setIsGenerating(true);
+    setApiError(null);
     setGeneratedHeadline("");
     setGeneratedSubheadline("");
 
-    // Simulate API call delay
-    await new Promise((resolve) => setTimeout(resolve, 1000));
+    const userEmail = userProfile?.email || "";
+    const userPrompt = `Generate a marketing headline and subheadline for a business named "${businessName}" selling "${productKeywords}". The tone of voice should be ${toneOfVoice}.`;
 
-    // Generate mock content based on inputs
-    let mockHeadline = `Ignite Your ${businessName} with Innovative ${productKeywords}!`;
-    let mockSubheadline = `Experience the future of marketing. Our platform transforms your vision into compelling narratives, effortlessly driving engagement and conversions.`;
+    try {
+      const response = await fetch("/api/ai/chat", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ userEmail, userPrompt, targetAiModule: "copywriting" }),
+      });
 
-    if (toneOfVoice === "Bold") {
-      mockHeadline = `Dominate with ${businessName}: Unleash Power of ${productKeywords}!`;
-      mockSubheadline = `Conquer your market. Our cutting-edge solutions deliver unparalleled results, guaranteed to amplify your brand's presence and impact.`;
-    } else if (toneOfVoice === "Casual") {
-      mockHeadline = `Hey there, check out ${businessName}'s cool ${productKeywords}!`;
-      mockSubheadline = `No fuss, just great stuff. We make it super easy for you to get awesome marketing content that really speaks to your audience.`;
-    } else if (toneOfVoice === "Empathetic") {
-      mockHeadline = `Solving Your ${businessName} Challenges with Thoughtful ${productKeywords} Solutions.`;
-      mockSubheadline = `We understand your needs. Our tailored approach gently guides your message to resonate deeply with customers, building trust and lasting connections.`;
-    } else if (toneOfVoice === "Humorous") {
-      mockHeadline = `Don't Be a Wallflower! Get ${businessName}'s Head-Turning ${productKeywords}!`;
-      mockSubheadline = `Tired of boring marketing? We'll inject some fun into your campaigns, making your audience laugh all the way to checkout. Seriously.`;
+      if (!response.ok) {
+        const errorData = await response.json();
+        setApiError(errorData.message || "An error occurred while fetching the response.");
+        setIsGenerating(false);
+        return;
+      }
+
+      const data = await response.json();
+      const aiResponse = data.response;
+
+      // Assuming the AI returns a structured response with headline and subheadline
+      const parsedResponse: { headline: string; subheadline: string } = JSON.parse(aiResponse);
+
+      simulateTypewriterEffect(parsedResponse.headline, setGeneratedHeadline, 40);
+      await new Promise((resolve) => setTimeout(resolve, parsedResponse.headline.length * 40 + 500));
+      simulateTypewriterEffect(parsedResponse.subheadline, setGeneratedSubheadline, 25);
+      await new Promise((resolve) => setTimeout(resolve, parsedResponse.subheadline.length * 25 + 500));
+
+    } catch (error: any) {
+      setApiError("An unexpected error occurred: " + error.message);
+      setIsGenerating(false);
     }
-
-
-    simulateTypewriterEffect(mockHeadline, setGeneratedHeadline, 40);
-    await new Promise((resolve) => setTimeout(resolve, mockHeadline.length * 40 + 500)); // Wait for headline to finish + small pause
-    simulateTypewriterEffect(mockSubheadline, setGeneratedSubheadline, 25);
-    await new Promise((resolve) => setTimeout(resolve, mockSubheadline.length * 25 + 500)); // Wait for subheadline to finish + small pause
-
-    setIsGenerating(false);
   };
-  // End: Simulate AI Generation
 
-  // Start: Apply to Storefront Simulation
   const handleApplyToStorefront = () => {
     if (generatedHeadline && generatedSubheadline) {
       alert(`Applied to storefront canvas:\nHeadline: "${generatedHeadline}"\nSubheadline: "${generatedSubheadline}"`);
-      // In a real application, this would dispatch an update to the site configuration or a global state manager
     } else {
       alert("Please generate marketing assets first.");
     }
   };
-  // End: Apply to Storefront Simulation
-
 
   if (isDataLoading) {
     return (
@@ -126,9 +117,7 @@ export default function AICopywritingPage() {
   }
 
   return (
-    // Start: Main Container for AI Copywriting Page
     <div className="min-h-screen bg-slate-950 text-slate-100 font-sans antialiased">
-      {/* Start: Top Navigation Layout (Minimal) */}
       <nav className="border-b border-slate-900 bg-slate-900/50 backdrop-blur-md sticky top-0 z-50 px-4 sm:px-6 py-4 flex flex-col gap-4 sm:flex-row sm:justify-between sm:items-center">
         <div className="flex items-center gap-3">
           <div className="h-8 w-8 rounded-lg bg-blue-600 flex items-center justify-center font-bold text-white shadow-md shadow-blue-950">N</div>
@@ -149,10 +138,8 @@ export default function AICopywritingPage() {
           </button>
         </div>
       </nav>
-      {/* End: Top Navigation Layout (Minimal) */}
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 py-8 sm:py-12 space-y-10">
-        {/* Start: Page Header */}
         <div className="mb-8 text-center sm:text-left">
           <h2 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">
             AI-Generated Copywriting Suite
@@ -161,9 +148,7 @@ export default function AICopywritingPage() {
             Harness the power of AI to instantly generate compelling headlines and subheadlines for your storefront.
           </p>
         </div>
-        {/* End: Page Header */}
 
-        {/* Start: Copywriting Input Form */}
         <section className="bg-slate-900 border border-slate-800 rounded-xl p-6 shadow-2xl space-y-6">
           <h3 className="text-lg font-bold text-white mb-4">Input Parameters</h3>
           <div className="space-y-4">
@@ -227,10 +212,9 @@ export default function AICopywritingPage() {
               "Generate Marketing Assets"
             )}
           </button>
+          {apiError && <p className="text-red-500 text-xs mt-2">{apiError}</p>}
         </section>
-        {/* End: Copywriting Input Form */}
 
-        {/* Start: AI Output Display */}
         <section className="bg-slate-900 border border-slate-800 rounded-xl p-6 shadow-2xl space-y-6">
           <h3 className="text-lg font-bold text-white mb-4">AI-Generated Content</h3>
           <div className="space-y-4">
@@ -261,16 +245,11 @@ export default function AICopywritingPage() {
             Apply to Storefront Canvas
           </button>
         </section>
-        {/* End: AI Output Display */}
 
-        {/* Start: Informational Footer */}
         <div className="text-center text-xs text-slate-600 pt-12 border-t border-slate-900 mt-12">
           <p>&copy; 2026 NexusDeploy. All rights reserved. AI generation is for premium-tier subscribers.</p>
         </div>
-        {/* End: Informational Footer */}
       </main>
     </div>
-    // End: Main Container for AI Copywriting Page
   );
 }
-// End: AI-Generated Copywriting Suite Page Component
