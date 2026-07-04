@@ -41,7 +41,7 @@ export default function PublicMerchantSitePage() {
         console.error("Error fetching site data:", fetchError.message);
         setErrorState(fetchError.message || "Target site configuration deployment missing or data error.");
         setIsPremium(false);
-      } finaly {
+      } finally { // FIXED: Corrected spelling from 'finaly' to 'finally' to pass Turbopack ECMA compilation
         setIsFetching(false);
       }
     };
@@ -83,7 +83,7 @@ export default function PublicMerchantSitePage() {
         )}
         {/* End: Google Ad Manager Placeholder Slot (Top) */}
 
-        {/* FIXED: Added onNewOrder dummy callback loop to resolve missing prop compilation error */}
+        {/* Dynamic Canvas Renderer Viewport Block */}
         <DynamicRenderer layoutData={siteData.layout_data} onNewOrder={() => {}} />
 
         {/* Start: Google Ad Manager Placeholder Slot (Bottom) */}
