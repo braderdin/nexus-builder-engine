@@ -35,7 +35,7 @@ interface WebTemplate {
   features: string[];
   isPremium: boolean;
   layout_data: Record<string, any> & {
-    themeAccent?: 'blue' | 'purple' | 'emerald'; // FIXED: Strict type tracking matching TemplateGrid.tsx props exactly
+    themeAccent?: 'blue' | 'purple' | 'emerald';
     featuresSection?: Array<{ title: string; description: string; }>;
     portfolioSection?: Array<{ id: string; title: string; description: string; imageUrl: string; }>;
     testimonialsSection?: Array<{ id: string; clientName: string; feedback: string; clientTitle: string; }>;
@@ -193,7 +193,7 @@ export default function DashboardPage() {
     }));
   };
 
-  const handleUpdateWorkspaceTargetNumber = (targetNumber: string) => {
+  const handleUpdateWhatsappTargetNumber = (targetNumber: string) => {
     setActivePreviewJson((prev) => ({
       ...prev,
       whatsappFormSection: { ...(prev.whatsappFormSection || {}), targetNumber },
@@ -333,12 +333,12 @@ export default function DashboardPage() {
         <ComponentLibrary activePreviewJson={activePreviewJson} setActivePreviewJson={setActivePreviewJson} />
         
         <section className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* FIXED EXPLICIT PROP ACCURACY MAPPING HERE */}
           <ContentConfigurator 
             activePreviewJson={activePreviewJson} 
             onUpdateHeroHeadline={handleUpdateHeroHeadline} 
             onUpdateHeroSubheadline={handleUpdateHeroSubheadline} 
-            onUpdateWhatsappTargetNumber={handleUpdateWorkspaceTargetNumber} 
-            onUpdateWorkspaceTargetNumber={handleUpdateWorkspaceTargetNumber}
+            onUpdateWhatsappTargetNumber={handleUpdateWhatsappTargetNumber} 
             onUpdateWhatsappButtonText={handleUpdateWhatsappButtonText} 
           />
           <BlueprintNavigator 
