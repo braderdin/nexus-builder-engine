@@ -35,7 +35,7 @@ interface WebTemplate {
   features: string[];
   isPremium: boolean;
   layout_data: Record<string, any> & {
-    themeAccent?: 'blue' | 'purple' | 'emerald' | 'vercel-midnight' | 'linear-purple' | 'supabase-emerald';
+    themeAccent?: 'blue' | 'purple' | 'emerald'; // FIXED: Strict type tracking matching TemplateGrid.tsx props exactly
     featuresSection?: Array<{ title: string; description: string; }>;
     portfolioSection?: Array<{ id: string; title: string; description: string; imageUrl: string; }>;
     testimonialsSection?: Array<{ id: string; clientName: string; feedback: string; clientTitle: string; }>;
@@ -193,7 +193,7 @@ export default function DashboardPage() {
     }));
   };
 
-  const handleUpdateWhatsappTargetNumber = (targetNumber: string) => {
+  const handleUpdateWorkspaceTargetNumber = (targetNumber: string) => {
     setActivePreviewJson((prev) => ({
       ...prev,
       whatsappFormSection: { ...(prev.whatsappFormSection || {}), targetNumber },
@@ -287,10 +287,6 @@ export default function DashboardPage() {
     setIsDeploying(false);
   };
 
-  if (isDataLoading) {
-    return <div className="min-h-screen bg-slate-950 text-slate-400 flex justify-center items-center font-mono text-xs">PARSING INTERMEDIARY WORKSPACE ACTIVE SESSION...</div>;
-  }
-
   const dict = localizationDictionaries[currentLanguage];
 
   return (
@@ -341,7 +337,8 @@ export default function DashboardPage() {
             activePreviewJson={activePreviewJson} 
             onUpdateHeroHeadline={handleUpdateHeroHeadline} 
             onUpdateHeroSubheadline={handleUpdateHeroSubheadline} 
-            onUpdateWhatsappTargetNumber={handleUpdateWhatsappTargetNumber} 
+            onUpdateWhatsappTargetNumber={handleUpdateWorkspaceTargetNumber} 
+            onUpdateWorkspaceTargetNumber={handleUpdateWorkspaceTargetNumber}
             onUpdateWhatsappButtonText={handleUpdateWhatsappButtonText} 
           />
           <BlueprintNavigator 
