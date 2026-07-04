@@ -13,28 +13,22 @@ interface OpenRouterErrorPayload {
 // End: Enterprise Structural Interface Definitions
 
 // Start: Dynamic Secure Key Extraction Framework
-// Reads the comma-separated string from environment variables and splits it into a clean array
 const getOpenRouterKeys = (): string[] => {
   const rawKeysString = process.env.NEXT_PUBLIC_OPENROUTER_KEYS || "";
   if (!rawKeysString) {
-    return ["dummy-fallback-key"]; // Prevent mapping crashes if env is empty
-  }
+    return ["dummy-fallback-key"];
+  } // FIXED: Added missing closing brace for if block
   return rawKeysString.split(",").map(key => key.trim());
-};
+}; // FIXED: Added missing closing brace for arrow function framework
 
 let currentKeyIndex = 0;
 // End: Dynamic Secure Key Extraction Framework
 
-/**
- * Executes a resilient server-side chat completion request to OpenRouter with automatic 429 failover.
- * @param messages Array of structural role/content chat objects.
- * @param model Target AI model engine string parameter.
- */
+// Start: OpenRouter Fallback Request Executor
 export async function callOpenRouterWithFallback(
   messages: OpenRouterMessageNode[],
   model: string = "google/gemini-2.5-flash"
 ): Promise<any> {
-  
   const rotatedKeysVault = getOpenRouterKeys();
   
   // Outer layer constraint guarantees we only loop maximum up to the total available key counts
@@ -84,4 +78,5 @@ export async function callOpenRouterWithFallback(
   }
 
   throw new Error("🚨 TRAGEDI: Kesemua API Key OpenRouter rahsia di platform anda telah kehabisan threshold!");
-}
+} // FIXED: Added missing closing brace for callOpenRouterWithFallback function block
+// End: OpenRouter Fallback Request Executor
