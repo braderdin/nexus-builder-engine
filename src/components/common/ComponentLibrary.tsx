@@ -153,8 +153,8 @@ const ComponentLibrary: React.FC<ComponentLibraryProps> = ({ activePreviewJson, 
             <div key={layout.id} className="space-y-4 border-b border-slate-800 last:border-b-0 pb-6">
               <h5 className="text-lg font-bold text-white">{layout.name}</h5>
               <p className="text-slate-400 text-sm">{layout.description}</p>
-              {/* FIXED: Removed missing reference to setMarketplaceItems to prevent browser crash execution */}
-              {layout.configOptionsRender && layout.configOptionsRender({ numColumns: numColumnsForLayout, setNumColumns: numColumnsForLayout })}
+              {/* FIXED: Restored valid function reference mapping target state variables correctly */}
+              {layout.configOptionsRender && layout.configOptionsRender({ numColumns: numColumnsForLayout, setNumColumns: setNumColumnsForLayout })}
               <div className="bg-slate-950 border border-slate-700 rounded-lg p-4 flex justify-center items-center min-h-[100px]">
                 {layout.preview}
               </div>

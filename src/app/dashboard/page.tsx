@@ -23,7 +23,7 @@ export default function DashboardPage() {
   const [activeDeployments, setActiveDeployments] = useState<any[]>([]);
   const [isDeploying, setIsDeploying] = useState<boolean>(false);
 
-  // Default fallback layout object for the blueprint canvas
+  // Default clean blueprint state for rendering canvas viewports
   const [activePreviewJson] = useState<any>({
     heroSection: {
       headline: "Welcome to Our Premium WhatsApp Express Store",
