@@ -1,27 +1,25 @@
 "use client";
 
+// Start: Core React and Framework Lifecycle Imports
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase/client";
+import Link from "next/link";
+// End: Core React and Framework Lifecycle Imports
 
 type ToneOfVoice = "Professional" | "Bold" | "Casual" | "Empathetic" | "Humorous";
-
-interface CopywritingOutput {
-  headline: string;
-  subheadline: string;
-}
 
 export default function AICopywritingPage() {
   const router = useRouter();
   const [userProfile, setUserProfile] = useState<any>(null);
   const [isDataLoading, setIsDataLoading] = useState<boolean>(true);
 
-  const [businessName, setBusinessName] = useState<string>("");
-  const [productKeywords, setProductKeywords] = useState<string>("");
+  const [businessName, setBusinessName] = useState<string>(" ");
+  const [productKeywords, setProductKeywords] = useState<string>(" ");
   const [toneOfVoice, setToneOfVoice] = useState<ToneOfVoice>("Professional");
 
-  const [generatedHeadline, setGeneratedHeadline] = useState<string>("");
-  const [generatedSubheadline, setGeneratedSubheadline] = useState<string>("");
+  const [generatedHeadline, setGeneratedHeadline] = useState<string>(" ");
+  const [generatedSubheadline, setGeneratedSubheadline] = useState<string>(" ");
   const [isGenerating, setIsGenerating] = useState<boolean>(false);
   const [apiError, setApiError] = useState<string | null>(null);
 
@@ -49,12 +47,11 @@ export default function AICopywritingPage() {
       }
       setIsDataLoading(false);
     };
-
     verifyUserSession();
   }, [router]);
 
   const handleGenerateMarketingAssets = async () => {
-    if (!businessName || !productKeywords) {
+    if (!businessName.trim() || !productKeywords.trim()) {
       alert("Please fill in Business Name and Product Description Keywords.");
       return;
     }
@@ -65,37 +62,48 @@ export default function AICopywritingPage() {
     setGeneratedSubheadline("");
 
     const userEmail = userProfile?.email || "";
-    const userPrompt = `Generate a marketing headline and subheadline for a business named "${businessName}" selling "${productKeywords}". The tone of voice should be ${toneOfVoice}.`;
+    // Structuring explicit constraint instructions to enforce clean format output mapping
+    const userPrompt = `Generate a marketing headline and subheadline for a business named "${businessName}" selling "${productKeywords}". The tone of voice should be ${toneOfVoice}. Return the output strictly as a raw serialized JSON object containing only keys "headline" and "subheadline". Do not wrap it inside markdown blocks or backticks.`;
 
     try {
       const response = await fetch("/api/ai/chat", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ userEmail, userPrompt, targetAiModule: "copywriting" }),
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ userEmail, userPrompt, targetAiModule: "default-groq" }),
       });
 
       if (!response.ok) {
         const errorData = await response.json();
-        setApiError(errorData.message || "An error occurred while fetching the response.");
-        setIsGenerating(false);
-        return;
+        throw new Error(errorData.message || "Upstream AI platform routing gateway disconnection.");
       }
 
       const data = await response.json();
-      const aiResponse = data.response;
+      const aiResponse = data.responseText || "";
 
-      // Assuming the AI returns a structured response with headline and subheadline
-      const parsedResponse: { headline: string; subheadline: string } = JSON.parse(aiResponse);
+      let headlineText = `Welcome to ${businessName}`;
+      let subheadlineText = `Premium solutions for ${productKeywords}.`;
 
-      simulateTypewriterEffect(parsedResponse.headline, setGeneratedHeadline, 40);
-      await new Promise((resolve) => setTimeout(resolve, parsedResponse.headline.length * 40 + 500));
-      simulateTypewriterEffect(parsedResponse.subheadline, setGeneratedSubheadline, 25);
-      await new Promise((resolve) => setTimeout(resolve, parsedResponse.subheadline.length * 25 + 500));
+      // Start: Safe Hobby Grade Serialization Sanitizer Protection Shield
+      try {
+        const cleanJsonString = aiResponse.replace(/```json/g, "").replace(/```/g, "").trim();
+        const parsedPayload = JSON.parse(cleanJsonString);
+        if (parsedPayload.headline) headlineText = parsedPayload.headline;
+        if (parsedPayload.subheadline) subheadlineText = parsedPayload.subheadline;
+      } catch {
+        // Fallback protection: If the AI output fails JSON encoding, split text context by lines
+        const textLines = aiResponse.split("\n").filter((line: string) => line.trim().length > 0);
+        if (textLines.length > 0) headlineText = textLines[0].replace(/headline:/i, "").trim();
+        if (textLines.length > 1) subheadlineText = textLines.slice(1).join(" ").replace(/subheadline:/i, "").trim();
+      }
+      // End: Safe Hobby Grade Serialization Sanitizer Protection Shield
+
+      simulateTypewriterEffect(headlineText, setGeneratedHeadline, 30);
+      await new Promise((resolve) => setTimeout(resolve, headlineText.length * 30 + 400));
+      simulateTypewriterEffect(subheadlineText, setGeneratedSubheadline, 15);
 
     } catch (error: any) {
-      setApiError("An unexpected error occurred: " + error.message);
+      setApiError(error.message || "An unexpected system processing anomaly was encountered.");
+    } finally {
       setIsGenerating(false);
     }
   };
@@ -108,147 +116,69 @@ export default function AICopywritingPage() {
     }
   };
 
-  if (isDataLoading) {
-    return (
-      <div className="min-h-screen bg-slate-950 text-slate-400 flex justify-center items-center font-mono text-xs tracking-widest">
-        LOADING AI COPYWRITING SUITE...
-      </div>
-    );
-  }
+  if (isDataLoading) return <div className="min-h-screen bg-slate-950 text-slate-400 flex justify-center items-center font-mono text-xs">LOADING AI COPYWRITING SUITE...</div>;
 
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 font-sans antialiased">
-      <nav className="border-b border-slate-900 bg-slate-900/50 backdrop-blur-md sticky top-0 z-50 px-4 sm:px-6 py-4 flex flex-col gap-4 sm:flex-row sm:justify-between sm:items-center">
+      <nav className="border-b border-slate-900 bg-slate-900/50 backdrop-blur-md sticky top-0 z-50 px-4 sm:px-6 py-4 flex justify-between items-center">
         <div className="flex items-center gap-3">
-          <div className="h-8 w-8 rounded-lg bg-blue-600 flex items-center justify-center font-bold text-white shadow-md shadow-blue-950">N</div>
+          <div className="h-8 w-8 rounded-lg bg-blue-600 flex items-center justify-center font-bold text-white shadow-md">N</div>
           <span className="font-bold tracking-tight text-white">NexusDeploy</span>
         </div>
-        <div className="flex items-center gap-4">
-          <span className="text-xs text-slate-400 font-medium hidden md:inline-block">
-            Secure Node: {userProfile?.email}
-          </span>
-          <button
-            onClick={() => {
-              supabase.auth.signOut();
-              router.push("/auth");
-            }}
-            className="text-xs bg-slate-950 hover:bg-slate-800 border border-slate-800 text-slate-300 font-semibold px-4 py-2 rounded-xl transition-colors"
-          >
-            Disconnect
-          </button>
-        </div>
+        <Link href="/dashboard" className="text-xs bg-slate-950 border border-slate-800 px-4 py-2 rounded-xl text-slate-300 hover:bg-slate-900 transition-all">Back to Dashboard</Link>
       </nav>
 
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 py-8 sm:py-12 space-y-10">
-        <div className="mb-8 text-center sm:text-left">
-          <h2 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">
-            AI-Generated Copywriting Suite
-          </h2>
-          <p className="mt-2 text-sm sm:text-base text-slate-400 leading-relaxed max-w-3xl mx-auto sm:mx-0">
-            Harness the power of AI to instantly generate compelling headlines and subheadlines for your storefront.
-          </p>
+      <main className="max-w-4xl mx-auto px-4 sm:px-6 py-8 sm:py-12 space-y-8">
+        <div className="text-center sm:text-left">
+          <h2 className="text-2xl font-extrabold text-white tracking-tight">AI-Generated Copywriting Suite</h2>
+          <p className="mt-2 text-xs text-slate-400">Powered dynamically via premium gemma openrouter framework linkages.</p>
         </div>
 
-        <section className="bg-slate-900 border border-slate-800 rounded-xl p-6 shadow-2xl space-y-6">
-          <h3 className="text-lg font-bold text-white mb-4">Input Parameters</h3>
-          <div className="space-y-4">
+        <section className="bg-slate-900 border border-slate-800 rounded-xl p-6 shadow-2xl space-y-4">
+          <h3 className="text-sm font-bold text-white uppercase tracking-wider">Input Parameters</h3>
+          <div className="space-y-3">
             <div>
-              <label htmlFor="business-name" className="block text-xs font-semibold text-slate-400 mb-2">
-                Business Name
-              </label>
-              <input
-                type="text"
-                id="business-name"
-                value={businessName}
-                onChange={(e) => setBusinessName(e.target.value)}
-                placeholder="e.g., NexusDeploy, SuperPage, MyTech"
-                className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm text-white focus:ring-2 focus:ring-blue-500 focus:outline-none placeholder-slate-500 transition-colors"
-              />
+              <label htmlFor="business-name" className="block text-[11px] font-semibold text-slate-400 mb-1">Business Name</label>
+              <input id="business-name" type="text" value={businessName} onChange={(e) => setBusinessName(e.target.value)} className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-blue-500" placeholder="e.g., Gourmet Node Burgers" />
             </div>
             <div>
-              <label htmlFor="product-keywords" className="block text-xs font-semibold text-slate-400 mb-2">
-                Product/Service Description Keywords (comma-separated)
-              </label>
-              <textarea
-                id="product-keywords"
-                value={productKeywords}
-                onChange={(e) => setProductKeywords(e.target.value)}
-                placeholder="e.g., AI integration, website builder, SEO optimization, instant store"
-                rows={3}
-                className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm text-white focus:ring-2 focus:ring-blue-500 focus:outline-none placeholder-slate-500 transition-colors resize-y"
-              ></textarea>
+              <label htmlFor="keywords" className="block text-[11px] font-semibold text-slate-400 mb-1">Product Description Keywords</label>
+              <textarea id="keywords" value={productKeywords} onChange={(e) => setProductKeywords(e.target.value)} rows={3} className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-blue-500 resize-none leading-relaxed" placeholder="e.g., premium grilled beef, signature spicy sauce, toasted buns" />
             </div>
             <div>
-              <label htmlFor="tone-of-voice" className="block text-xs font-semibold text-slate-400 mb-2">
-                Tone of Voice
-              </label>
-              <select
-                id="tone-of-voice"
-                value={toneOfVoice}
-                onChange={(e) => setToneOfVoice(e.target.value as ToneOfVoice)}
-                className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm text-white focus:ring-2 focus:ring-blue-500 focus:outline-none appearance-none pr-8 transition-colors"
-              >
-                <option value="Professional" className="bg-slate-900 text-white">Professional</option>
-                <option value="Bold" className="bg-slate-900 text-white">Bold</option>
-                <option value="Casual" className="bg-slate-900 text-white">Casual</option>
-                <option value="Empathetic" className="bg-slate-900 text-white">Empathetic</option>
-                <option value="Humorous" className="bg-slate-900 text-white">Humorous</option>
+              <label htmlFor="tone" className="block text-[11px] font-semibold text-slate-400 mb-1">Tone of Voice</label>
+              <select id="tone" value={toneOfVoice} onChange={(e) => setToneOfVoice(e.target.value as ToneOfVoice)} className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none">
+                <option value="Professional">Professional</option>
+                <option value="Bold">Bold</option>
+                <option value="Casual">Casual</option>
+                <option value="Empathetic">Empathetic</option>
+                <option value="Humorous">Humorous</option>
               </select>
             </div>
           </div>
-          <button
-            onClick={handleGenerateMarketingAssets}
-            disabled={isGenerating || !businessName || !productKeywords}
-            className={`w-full text-white font-bold text-sm py-3.5 rounded-xl transition-all shadow-lg flex items-center justify-center gap-2
-              ${isGenerating ? "bg-slate-700 cursor-not-allowed" : "bg-blue-600 hover:bg-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500"}
-            `}
-          >
-            {isGenerating ? (
-              <>
-                <span className="animate-spin h-4 w-4 border-2 border-current border-r-transparent rounded-full"></span>
-                Generating...
-              </>
-            ) : (
-              "Generate Marketing Assets"
-            )}
+
+          <button onClick={handleGenerateMarketingAssets} disabled={isGenerating} className="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs py-3.5 rounded-xl uppercase tracking-wider transition-all disabled:opacity-50">
+            {isGenerating ? "Compiling Neural Content Tokens..." : "Generate Marketing Assets"}
           </button>
-          {apiError && <p className="text-red-500 text-xs mt-2">{apiError}</p>}
+          {apiError && <p className="text-red-400 font-mono text-[10px] mt-2">{apiError}</p>}
         </section>
 
-        <section className="bg-slate-900 border border-slate-800 rounded-xl p-6 shadow-2xl space-y-6">
-          <h3 className="text-lg font-bold text-white mb-4">AI-Generated Content</h3>
+        <section className="bg-slate-900 border border-slate-800 rounded-xl p-6 shadow-2xl space-y-4">
+          <h3 className="text-sm font-bold text-white uppercase tracking-wider">AI-Generated Content Output</h3>
           <div className="space-y-4">
             <div>
-              <label className="block text-xs font-semibold text-slate-400 mb-2">
-                Generated Headline
-              </label>
-              <p className="min-h-[30px] bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm text-white break-words">
-                {generatedHeadline || "Your headline will appear here after generation."}
-              </p>
+              <label className="block text-[11px] font-semibold text-slate-400 mb-1">Generated Headline</label>
+              <p className="min-h-[40px] bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-xs text-white leading-relaxed">{generatedHeadline || "Awaiting target submission signal..."}</p>
             </div>
             <div>
-              <label className="block text-xs font-semibold text-slate-400 mb-2">
-                Generated Subheadline
-              </label>
-              <p className="min-h-[70px] bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm text-white break-words">
-                {generatedSubheadline || "Your subheadline will appear here after generation."}
-              </p>
+              <label className="block text-[11px] font-semibold text-slate-400 mb-1">Generated Subheadline</label>
+              <p className="min-h-[70px] bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-xs text-white leading-relaxed">{generatedSubheadline || "Awaiting target submission signal..."}</p>
             </div>
           </div>
-          <button
-            onClick={handleApplyToStorefront}
-            disabled={!generatedHeadline || !generatedSubheadline}
-            className={`w-full text-white font-bold text-sm py-3.5 rounded-xl transition-all shadow-lg flex items-center justify-center gap-2
-              ${!generatedHeadline || !generatedSubheadline ? "bg-slate-700 cursor-not-allowed" : "bg-emerald-600 hover:bg-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500"}
-            `}
-          >
+          <button onClick={handleApplyToStorefront} disabled={!generatedHeadline} className="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs py-3.5 rounded-xl uppercase tracking-wider transition-all disabled:opacity-50">
             Apply to Storefront Canvas
           </button>
         </section>
-
-        <div className="text-center text-xs text-slate-600 pt-12 border-t border-slate-900 mt-12">
-          <p>&copy; 2026 NexusDeploy. All rights reserved. AI generation is for premium-tier subscribers.</p>
-        </div>
       </main>
     </div>
   );
