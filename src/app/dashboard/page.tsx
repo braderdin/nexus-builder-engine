@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 // End: Core React and Next.js Framework Imports
 
-// Start: External Backend and Component Dependency Imports
+// Start: External Backend, Component, and Localization Dependency Imports
 import { supabase } from "@/lib/supabase/client";
 import { getUserActiveSitesCount, getUserDeployedSites } from "@/lib/supabase/sites";
 import { updateMerchantSiteConfiguration } from "@/app/dashboard/actions";
@@ -25,7 +25,6 @@ import CommandHub from "@/components/common/CommandHub";
 import ComponentLibrary from "@/components/common/ComponentLibrary";
 import ThemePaletteSwapper from "@/components/common/ThemePaletteSwapper";
 import ContextualTourGuide from "@/components/common/ContextualTourGuide";
-import LayoutArranger, { LayoutSection, LayoutSectionType } from "@/components/common/LayoutArranger";
 // End: External Backend and Component Dependency Imports
 
 interface WebTemplate {
@@ -40,8 +39,6 @@ interface WebTemplate {
     featuresSection?: Array<{ title: string; description: string; }>;
     portfolioSection?: Array<{ id: string; title: string; description: string; imageUrl: string; }>;
     testimonialsSection?: Array<{ id: string; clientName: string; feedback: string; clientTitle: string; }>;
-    products?: { id: string; name: string; price: number }[];
-    customHtmlSection?: { id: string; content: string; };
   };
 }
 
@@ -69,9 +66,27 @@ const PREBUILT_TEMPLATES: WebTemplate[] = [
         { title: "Seamless Ordering", description: "Customers can place orders directly via WhatsApp with just a few taps." },
         { title: "Fast Deployment", description: "Get your store online in minutes, no coding required." }
       ],
-      products: [
-        { id: "p1", name: "WhatsApp Premium Package", price: 49.00 }
-      ]
+    }
+  },
+  {
+    id: "tpl-seo-local",
+    name: "SEO Engine Portfolio",
+    category: "Service Business",
+    description: "Built for local service businesses. Structured with perfect semantic HTML and OpenGraph schema metadata to rank rapidly on Google search results.",
+    features: ["Perfect SEO Structural Score", "Google Maps Matrix Ready", "High-Conversion Lead Form"],
+    isPremium: false,
+    layout_data: {
+      heroSection: {
+        headline: "Rank Higher with Local SEO Architectures",
+        subheadline: "Engineered specifically to claim top organic rankings on search engines for home and digital services.",
+        ctaText: "Book Service Now"
+      },
+      whatsappFormSection: {
+        promptTitle: "Get a Free Consultation Invoice",
+        buttonText: "Connect with Local Specialist",
+        targetNumber: "60198765432"
+      },
+      themeAccent: "blue"
     }
   }
 ];
@@ -103,16 +118,12 @@ export default function DashboardPage() {
   const [activeDeployments, setActiveDeployments] = useState<any[]>([]);
   const [customSubdomain, setCustomSubdomain] = useState<string>("");
   const [isSubdomainValidAndAvailable, setIsSubdomainValidAndAvailable] = useState<boolean>(false);
-  const [currentThemeAccent, setCurrentThemeAccent] = useState<any>('emerald');
+  const [currentThemeAccent, setCurrentThemeAccent] = useState<any>(initialTemplate.layout_data.themeAccent || 'blue');
 
-  const [layoutSectionsOrder, setLayoutSectionsOrder] = useState<LayoutSection[]>([
-    { id: 'heroSection', name: 'Hero Section', isEnabled: true, icon: '🌟' },
-    { id: 'whatsappFormSection', name: 'WhatsApp Form', isEnabled: true, icon: '💬' },
-    { id: 'featuresSection', name: 'Features Grid', isEnabled: true, icon: '✨' },
-    { id: 'customHtmlSection', name: 'Custom HTML', isEnabled: true, icon: '💻' }
-  ]);
-  const [showMeshGrid, setShowMeshGrid] = useState<boolean>(false);
-  const [showBlurOverlay, setShowBlurOverlay] = useState<boolean>(false);
+  const [isFeaturesSectionEnabled, setIsFeaturesSectionEnabled] = useState<boolean>(!!initialTemplate.layout_data.featuresSection && initialTemplate.layout_data.featuresSection.length > 0);
+  const [isPortfolioSectionEnabled, setIsPortfolioSectionEnabled] = useState<boolean>(!!initialTemplate.layout_data.portfolioSection && initialTemplate.layout_data.portfolioSection.length > 0);
+  const [isTestimonialsSectionEnabled, setIsTestimonialsSectionEnabled] = useState<boolean>(!!initialTemplate.layout_data.testimonialsSection && initialTemplate.layout_data.testimonialsSection.length > 0);
+  const [activeTemplateId, setActiveTemplateId] = useState<string>(initialTemplate.id);
   const [tourStep, setTourStep] = useState<number>(0);
   const [isTourActive, setIsTourActive] = useState<boolean>(true);
   const [showDeploymentSuccessModal, setShowDeploymentSuccessModal] = useState<boolean>(false);
@@ -137,9 +148,15 @@ export default function DashboardPage() {
   }, [router]);
 
   const handleTemplateSelect = (template: WebTemplate) => {
+    setActiveTemplateId(template.id);
     setActivePreviewJson(template.layout_data);
     setCurrentThemeAccent(template.layout_data.themeAccent || "blue");
-    if (isTourActive && tourStep === 0) setTourStep(1);
+    setIsFeaturesSectionEnabled(!!template.layout_data.featuresSection && template.layout_data.featuresSection.length > 0);
+    setIsPortfolioSectionEnabled(!!template.layout_data.portfolioSection && template.layout_data.portfolioSection.length > 0);
+    setIsTestimonialsSectionEnabled(!!template.layout_data.testimonialsSection && template.layout_data.testimonialsSection.length > 0);
+    if (isTourActive && tourStep === 0) {
+      setTourStep(1);
+    }
   };
 
   const handleThemeAccentChange = (accent: any) => {
@@ -148,28 +165,104 @@ export default function DashboardPage() {
   };
 
   const handleAdvanceTourStep = () => {
-    setTourStep((prev) => prev + 1);
-    if (tourStep === 3) setIsTourActive(false);
-  };
-
-  const markTutorialStepCompleted = (stepId: string) => {
-    if (typeof window !== "undefined") {
-      const saved = localStorage.getItem("nexusTutorialCompletedSteps");
-      const completed = saved ? JSON.parse(saved) : {};
-      completed[stepId] = true;
-      localStorage.setItem("nexusTutorialCompletedSteps", JSON.stringify(completed));
+    setTourStep((prevStep) => prevStep + 1);
+    if (tourStep === 3) {
+      setIsTourActive(false);
     }
   };
 
-  const handleUpdateHeroHeadlineWithTour = (headline: string) => {
+  const handleSkipTour = () => {
+    setIsTourActive(false);
+    setTourStep(4);
+  };
+
+  const handleUpdateHeroHeadline = (headline: string) => {
     setActivePreviewJson((prev) => ({
       ...prev,
       heroSection: { ...(prev.heroSection || {}), headline },
     }));
     if (isTourActive && tourStep === 1) {
       setTourStep(2);
-      markTutorialStepCompleted("step2");
     }
+  };
+
+  const handleUpdateHeroSubheadline = (subheadline: string) => {
+    setActivePreviewJson((prev) => ({
+      ...prev,
+      heroSection: { ...(prev.heroSection || {}), subheadline },
+    }));
+  };
+
+  const handleUpdateWhatsappTargetNumber = (targetNumber: string) => {
+    setActivePreviewJson((prev) => ({
+      ...prev,
+      whatsappFormSection: { ...(prev.whatsappFormSection || {}), targetNumber },
+    }));
+  };
+
+  const handleUpdateWhatsappButtonText = (buttonText: string) => {
+    setActivePreviewJson((prev) => ({
+      ...prev,
+      whatsappFormSection: { ...(prev.whatsappFormSection || {}), buttonText },
+    }));
+  };
+
+  const handleTogglePortfolioSection = (isEnabled: boolean) => {
+    setIsPortfolioSectionEnabled(isEnabled);
+    setActivePreviewJson((prev) => ({
+      ...prev,
+      portfolioSection: isEnabled ? (prev.portfolioSection || []) : undefined,
+    }));
+  };
+
+  const handleAddPortfolioItem = (item: any) => {
+    setActivePreviewJson((prev) => ({
+      ...prev,
+      portfolioSection: [...(prev.portfolioSection || []), item],
+    }));
+  };
+
+  const handleRemovePortfolioItem = (id: string) => {
+    setActivePreviewJson((prev) => ({
+      ...prev,
+      portfolioSection: (prev.portfolioSection || []).filter((item: any) => item.id !== id),
+    }));
+  };
+
+  const handleUpdatePortfolioItemTitle = (id: string, title: string) => {
+    setActivePreviewJson((prev) => ({
+      ...prev,
+      portfolioSection: (prev.portfolioSection || []).map((item: any) => item.id === id ? { ...item, title } : item),
+    }));
+  };
+
+  const handleToggleTestimonialsSection = (isEnabled: boolean) => {
+    setIsTestimonialsSectionEnabled(isEnabled);
+    setActivePreviewJson((prev) => ({
+      ...prev,
+      testimonialsSection: isEnabled ? (prev.testimonialsSection || []) : undefined,
+    }));
+  };
+
+  const handleAddTestimonialItem = (item: any) => {
+    setActivePreviewJson((prev) => ({
+      ...prev,
+      testimonialsSection: [...(prev.testimonialsSection || []), item],
+    }));
+  };
+
+  const handleRemoveTestimonialItem = (id: string) => {
+    setActivePreviewJson((prev) => ({
+      ...prev,
+      testimonialsSection: (prev.testimonialsSection || []).filter((item: any) => item.id !== id),
+    }));
+  };
+
+  const handleUpdateTestimonialItemClientName = (id: string, clientName: string) => {
+    setActivePreviewJson((prev) => ({
+      ...prev,
+      testimonialsSection: (prev.testimonialsSection || []).map((item: any) => item.id === id ? { ...item, clientName } : item),
+    }));
   };
 
   const handleDeployBlueprintAction = async (template: WebTemplate) => {
@@ -217,44 +310,72 @@ export default function DashboardPage() {
         <button onClick={() => supabase.auth.signOut().then(() => router.push("/auth"))} className="text-xs bg-slate-950 border border-slate-800 px-4 py-2 rounded-xl text-slate-300">Disconnect</button>
       </nav>
       
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 py-10 space-y-10">
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 py-6 sm:py-10 space-y-10">
         <section className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <StatCard title="Total Active Sites" value={totalActiveSitesCount !== null ? String(totalActiveSitesCount) : "0"} />
           <StatCard title="Cloudflare R2 Storage" value="1.2 GB / 10 GB" />
           <StatCard title="AI Requests Used Today" value="0 / 5" />
         </section>
 
-        <CommandHub userProfile={userProfile} aiRequestsUsedToday={0} activeDeployments={activeDeployments} customSubdomain={customSubdomain} isSubdomainValidAndAvailable={isSubdomainValidAndAvailable} activePreviewJson={activePreviewJson} currentStorageUsedBytes={12582912} />
+        <CommandHub
+          userProfile={userProfile}
+          aiRequestsUsedToday={0}
+          activeDeployments={activeDeployments}
+          customSubdomain={customSubdomain}
+          isSubdomainValidAndAvailable={isSubdomainValidAndAvailable}
+          activePreviewJson={activePreviewJson}
+          currentStorageUsedBytes={12582912}
+        />
         
         <ThemePaletteSwapper currentThemeAccent={currentThemeAccent} onThemeAccentChange={handleThemeAccentChange} />
 
         <section className="space-y-4">
           <h4 className="text-sm font-semibold text-slate-300">Live Visual Blueprint Parser</h4>
-          <DynamicRenderer layoutData={activePreviewJson} onNewOrder={(order) => setCustomerOrders((prev) => [order, ...prev])} layoutSectionsOrder={layoutSectionsOrder} showMeshGrid={showMeshGrid} showBlurOverlay={showBlurOverlay} />
+          <DynamicRenderer layoutData={activePreviewJson} onNewOrder={(order) => setCustomerOrders((prev) => [order, ...prev])} />
         </section>
 
-        <LayoutArranger sections={layoutSectionsOrder} onReorder={handleReorderLayoutSections} onToggleSection={handleToggleLayoutSection} />
-
-        <section className="bg-slate-900 border border-slate-800 p-6 rounded-2xl space-y-4">
-          <h3 className="text-sm font-bold text-white">Visual Ambient Modifiers</h3>
-          <div className="flex gap-6">
-            <label className="flex items-center gap-2 text-xs text-slate-400">
-              <input type="checkbox" checked={showMeshGrid} onChange={(e) => setShowMeshGrid(e.target.checked)} /> Ambient Mesh Grid
-            </label>
-            <label className="flex items-center gap-2 text-xs text-slate-400">
-              <input type="checkbox" checked={showBlurOverlay} onChange={(e) => setShowBlurOverlay(e.target.checked)} /> Glow Blur Overlay
-            </label>
-          </div>
-        </section>
-
-        <ComponentLibrary activePreviewJson={activePreviewJson} setActivePreviewJson={setActivePreviewJson} onSectionInjected={(id) => console.log(id)} />
+        <ComponentLibrary activePreviewJson={activePreviewJson} setActivePreviewJson={setActivePreviewJson} />
         
         <section className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <ContentConfigurator activePreviewJson={activePreviewJson} onUpdateHeroHeadline={handleUpdateHeroHeadlineWithTour} onUpdateHeroSubheadline={()=>{}} onUpdateWorkspaceTargetNumber={()=>{}} onUpdateWhatsappButtonText={()=>{}} onUpdateWhatsappTargetNumber={()=>{}} />
-          <BlueprintNavigator activePreviewJson={activePreviewJson} isPortfolioSectionEnabled={false} onTogglePortfolioSection={()=>{}} onAddPortfolioItem={()=>{}} onRemovePortfolioItem={()=>{}} onUpdatePortfolioItemTitle={()=>{}} isTestimonialsSectionEnabled={false} onToggleTestimonialsSection={()=>{}} onAddTestimonialItem={()=>{}} onRemoveTestimonialItem={()=>{}} onUpdateTestimonialItemClientName={()=>{}} />
+          <ContentConfigurator 
+            activePreviewJson={activePreviewJson} 
+            onUpdateHeroHeadline={handleUpdateHeroHeadline} 
+            onUpdateHeroSubheadline={handleUpdateHeroSubheadline} 
+            onUpdateWhatsappTargetNumber={handleUpdateWhatsappTargetNumber} 
+            onUpdateWhatsappButtonText={handleUpdateWhatsappButtonText} 
+          />
+          <BlueprintNavigator 
+            activePreviewJson={activePreviewJson} 
+            isPortfolioSectionEnabled={isPortfolioSectionEnabled} 
+            onTogglePortfolioSection={handleTogglePortfolioSection} 
+            onAddPortfolioItem={handleAddPortfolioItem} 
+            onRemovePortfolioItem={handleRemovePortfolioItem} 
+            onUpdatePortfolioItemTitle={handleUpdatePortfolioItemTitle} 
+            isTestimonialsSectionEnabled={isTestimonialsSectionEnabled} 
+            onToggleTestimonialsSection={handleToggleTestimonialsSection} 
+            onAddTestimonialItem={handleAddTestimonialItem} 
+            onRemoveTestimonialItem={handleRemoveTestimonialItem} 
+            onUpdateTestimonialItemClientName={handleUpdateTestimonialItemClientName} 
+          />
         </section>
 
-        <TemplateGrid templates={PREBUILT_TEMPLATES} selectedTemplateFilter={selectedTemplateFilter} setSelectedTemplateFilter={setSelectedTemplateFilter} activeTemplateId="tpl-wa-store" onTemplateSelect={handleTemplateSelect} handleDeployBlueprintAction={handleDeployBlueprintAction} isDeploying={isDeploying} isSubdomainValidAndAvailable={isSubdomainValidAndAvailable} />
+        <section className="bg-slate-900 border border-slate-800 p-6 rounded-2xl">
+          <SubdomainChecker onSubdomainChange={(sub, valid) => {
+            setCustomSubdomain(sub);
+            setIsSubdomainValidAndAvailable(valid);
+          }} />
+        </section>
+
+        <TemplateGrid 
+          templates={PREBUILT_TEMPLATES} 
+          selectedTemplateFilter={selectedTemplateFilter} 
+          setSelectedTemplateFilter={setSelectedTemplateFilter} 
+          activeTemplateId={activeTemplateId} 
+          onTemplateSelect={handleTemplateSelect} 
+          handleDeployBlueprintAction={handleDeployBlueprintAction} 
+          isDeploying={isDeploying} 
+          isSubdomainValidAndAvailable={isSubdomainValidAndAvailable} 
+        />
         <AnalyticsSimulator layoutData={activePreviewJson} />
         <DeploymentHistory activeDeployments={activeDeployments} />
       </main>
@@ -270,7 +391,7 @@ export default function DashboardPage() {
       )}
 
       {isTourActive && tourStep < 4 && (
-        <ContextualTourGuide tourStep={tourStep} onAdvanceStep={handleAdvanceTourStep} onSkipTour={() => setIsTourActive(false)} />
+        <ContextualTourGuide tourStep={tourStep} onAdvanceStep={handleAdvanceTourStep} onSkipTour={handleSkipTour} />
       )}
     </div>
   );
