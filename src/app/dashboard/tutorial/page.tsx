@@ -1,140 +1,399 @@
 "use client";
 
-// Start: Core React Framework Dependency Imports
-import React, { useState, useEffect } from "react";
+// Start: Core React and Next.js Framework Imports
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
-// End: Core React Framework Dependency Imports
+// End: Core React and Next.js Framework Imports
 
-export interface TutorialStep {
+// Start: External Backend, Component, and Localization Dependency Imports
+import { supabase } from "@/lib/supabase/client";
+import { getUserActiveSitesCount, getUserDeployedSites } from "@/lib/supabase/sites";
+import { updateMerchantSiteConfiguration } from "@/app/dashboard/actions";
+import AiConsole from "@/components/common/AiConsole";
+import DynamicRenderer, { CustomerOrder } from "@/components/templates/DynamicRenderer";
+import ImageGenerator from "@/components/common/ImageGenerator";
+import SelfHealingEngine from "@/components/common/SelfHealingEngine";
+import SubdomainChecker from "@/components/common/SubdomainChecker";
+import ContentConfigurator from "@/components/common/ContentConfigurator";
+import BlueprintNavigator from "@/components/common/BlueprintNavigator";
+import TemplateGrid from "@/components/common/TemplateGrid";
+import { localizationDictionaries, LanguageCode } from "@/config/dictionaries";
+import AnalyticsSimulator from "@/components/common/AnalyticsSimulator";
+import DeploymentHistory from "@/components/common/DeploymentHistory";
+import CommandHub from "@/components/common/CommandHub";
+import ComponentLibrary from "@/components/common/ComponentLibrary";
+import ThemePaletteSwapper from "@/components/common/ThemePaletteSwapper";
+import ContextualTourGuide from "@/components/common/ContextualTourGuide";
+// End: External Backend and Component Dependency Imports
+
+interface WebTemplate {
   id: string;
-  title: string;
+  name: string;
+  category: string;
   description: string;
+  features: string[];
+  isPremium: boolean;
+  layout_data: Record<string, any> & {
+    themeAccent?: 'blue' | 'purple' | 'emerald' | 'vercel-midnight' | 'linear-purple' | 'supabase-emerald';
+    featuresSection?: Array<{ title: string; description: string; }>;
+    portfolioSection?: Array<{ id: string; title: string; description: string; imageUrl: string; }>;
+    testimonialsSection?: Array<{ id: string; clientName: string; feedback: string; clientTitle: string; }>;
+  };
 }
 
-export default function TutorialPage() {
-  const [completedSteps, setCompletedSteps] = useState<Record<string, boolean>>({});
+const PREBUILT_TEMPLATES: WebTemplate[] = [
+  {
+    id: "tpl-wa-store",
+    name: "WhatsApp Express Storefront",
+    category: "E-Commerce",
+    description: "Highly optimized single-page store structure. Features a frictionless order form routing checkouts straight to the merchant's WhatsApp line.",
+    features: ["Instant WA Checkout", "Image Auto-Compression", "Ultra-Fast Mobile Performance"],
+    isPremium: false,
+    layout_data: {
+      heroSection: {
+        headline: "Welcome to Our Premium WhatsApp Express Store",
+        subheadline: "Browse high-converting local merchant configurations. Order directly through the encrypted WhatsApp gateway in one single tap.",
+        ctaText: "Browse Collection"
+      },
+      whatsappFormSection: {
+        promptTitle: "Direct Order Form Pipeline",
+        buttonText: "Send Merchant Order via WhatsApp",
+        targetNumber: "60123456789"
+      },
+      themeAccent: "emerald",
+      featuresSection: [
+        { title: "Seamless Ordering", description: "Customers can place orders directly via WhatsApp with just a few taps." },
+        { title: "Fast Deployment", description: "Get your store online in minutes, no coding required." }
+      ],
+    }
+  },
+  {
+    id: "tpl-seo-local",
+    name: "SEO Engine Portfolio",
+    category: "Service Business",
+    description: "Built for local service businesses. Structured with perfect semantic HTML and OpenGraph schema metadata to rank rapidly on Google search results.",
+    features: ["Perfect SEO Structural Score", "Google Maps Matrix Ready", "High-Conversion Lead Form"],
+    isPremium: false,
+    layout_data: {
+      heroSection: {
+        headline: "Rank Higher with Local SEO Architectures",
+        subheadline: "Engineered specifically to claim top organic rankings on search engines for home and digital services.",
+        ctaText: "Book Service Now"
+      },
+      whatsappFormSection: {
+        promptTitle: "Get a Free Consultation Invoice",
+        buttonText: "Connect with Local Specialist",
+        targetNumber: "60198765432"
+      },
+      themeAccent: "blue"
+    }
+  }
+];
+
+interface StatCardProps {
+  title: string;
+  value: string;
+}
+
+const StatCard: React.FC<StatCardProps> = ({ title, value }) => (
+  <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl flex flex-col justify-between">
+    <h4 className="text-sm font-medium text-slate-400 mb-2">{title}</h4>
+    <p className="text-2xl sm:text-3xl font-extrabold text-white">{value}</p>
+  </div>
+);
+
+export default function DashboardPage() {
+  const router = useRouter();
+  const [userProfile, setUserProfile] = useState<any>(null);
+  const [isDataLoading, setIsDataLoading] = useState<boolean>(true);
+  const [selectedTemplateFilter, setSelectedTemplateFilter] = useState<string>("All");
+  const [currentLanguage, setCurrentLanguage] = useState<LanguageCode>("en");
+  
+  const initialTemplate = PREBUILT_TEMPLATES[0];
+  const [activePreviewJson, setActivePreviewJson] = useState<Record<string, any>>(initialTemplate.layout_data);
+  const [isDeploying, setIsDeploying] = useState<boolean>(false);
+  const [customerOrders, setCustomerOrders] = useState<CustomerOrder[]>([]);
+  const [totalActiveSitesCount, setTotalActiveSitesCount] = useState<number | null>(null);
+  const [activeDeployments, setActiveDeployments] = useState<any[]>([]);
+  const [customSubdomain, setCustomSubdomain] = useState<string>("");
+  const [isSubdomainValidAndAvailable, setIsSubdomainValidAndAvailable] = useState<boolean>(false);
+  const [currentThemeAccent, setCurrentThemeAccent] = useState<any>(initialTemplate.layout_data.themeAccent || 'blue');
+
+  const [isFeaturesSectionEnabled, setIsFeaturesSectionEnabled] = useState<boolean>(!!initialTemplate.layout_data.featuresSection && initialTemplate.layout_data.featuresSection.length > 0);
+  const [isPortfolioSectionEnabled, setIsPortfolioSectionEnabled] = useState<boolean>(!!initialTemplate.layout_data.portfolioSection && initialTemplate.layout_data.portfolioSection.length > 0);
+  const [isTestimonialsSectionEnabled, setIsTestimonialsSectionEnabled] = useState<boolean>(!!initialTemplate.layout_data.testimonialsSection && initialTemplate.layout_data.testimonialsSection.length > 0);
+  const [activeTemplateId, setActiveTemplateId] = useState<string>(initialTemplate.id);
+  const [tourStep, setTourStep] = useState<number>(0);
+  const [isTourActive, setIsTourActive] = useState<boolean>(true);
+  const [showDeploymentSuccessModal, setShowDeploymentSuccessModal] = useState<boolean>(false);
+  const [deployedSiteUrl, setDeployedSiteUrl] = useState<string | null>(null);
 
   useEffect(() => {
-    if (typeof window !== "undefined") {
-      const saved = localStorage.getItem("nexusTutorialCompletedSteps");
-      if (saved) {
-        try {
-          setCompletedSteps(JSON.parse(saved));
-        } catch (e) {
-          console.error("Failed to parse tutorial storage keys:", e);
-        }
+    const verifyUserSessionAndFetchData = async () => {
+      setIsDataLoading(true);
+      const { data: { session }, error } = await supabase.auth.getSession();
+      if (error || !session) {
+        router.push("/auth");
+      } else {
+        setUserProfile(session.user);
+        const { count: sitesCount } = await getUserActiveSitesCount(session.user.id);
+        setTotalActiveSitesCount(sitesCount);
+        const { data: deploymentsData } = await getUserDeployedSites(session.user.id);
+        setActiveDeployments(deploymentsData || []);
       }
-    }
-  }, []);
+      setIsDataLoading(false);
+    };
+    verifyUserSessionAndFetchData();
+  }, [router]);
 
-  const onToggleStepCompletion = (stepId: string) => {
-    setCompletedSteps((prev) => {
-      const updated = { ...prev, [stepId]: !prev[stepId] };
-      if (typeof window !== "undefined") {
-        localStorage.setItem("nexusTutorialCompletedSteps", JSON.stringify(updated));
-      }
-      return updated;
-    });
+  const handleTemplateSelect = (template: WebTemplate) => {
+    setActiveTemplateId(template.id);
+    setActivePreviewJson(template.layout_data);
+    setCurrentThemeAccent(template.layout_data.themeAccent || "blue");
+    setIsFeaturesSectionEnabled(!!template.layout_data.featuresSection && template.layout_data.featuresSection.length > 0);
+    setIsPortfolioSectionEnabled(!!template.layout_data.portfolioSection && template.layout_data.portfolioSection.length > 0);
+    setIsTestimonialsSectionEnabled(!!template.layout_data.testimonialsSection && template.layout_data.testimonialsSection.length > 0);
+    if (isTourActive && tourStep === 0) {
+      setTourStep(1);
+    }
   };
 
-  const tutorialSteps: TutorialStep[] = [
-    {
-      id: "step1",
-      title: "Step 1: One-Click Blueprint Selection",
-      description: "Initiate your design by choosing a pre-built template from the 'Template Grid' on the Dashboard. This action loads it into the Live Visual Blueprint Parser.",
-    },
-    {
-      id: "step2",
-      title: "Step 2: WYSIWYG Layout Text Tweaking",
-      description: "Customize your site's content interactively. Modify headlines and subheadlines in the 'Content Configurator' panel.",
-    },
-    {
-      id: "step3",
-      title: "Step 3: Component Injection via Library",
-      description: "Enhance your site using the 'Component Library & Live Sandbox'. Inject custom HTML/CSS/JS snippets or pre-built UI components directly into your blueprint.",
-    },
-    {
-      id: "step4",
-      title: "Step 4: Subdomain Flight Verification",
-      description: "Prepare for deployment by using the 'Subdomain Checker'. Enter and verify an available subdomain for your site.",
-    },
-    {
-      id: "step5",
-      title: "Step 5: Utilize the Layout Arranger",
-      description: "Reorder and toggle visibility of different sections using the 'Layout Section Arranger'. Experiment with different arrangements.",
-    },
-    {
-      id: "step6",
-      title: "Step 6: Experiment with Visual Modifiers",
-      description: "Enhance the visual appeal of your site. Toggle the 'Ambient Mesh Grid Lines' and 'Glowing Container Blur Overlay' within the 'Visual Modifiers' section.",
-    },
-    {
-      id: "step7",
-      title: "Step 7: Deploy Your Blueprint",
-      description: "With your site configured and validated, click the 'Deploy Blueprint' button in the 'Template Grid'. Successful deployment completes your tutorial journey!",
-    }
-  ];
+  const handleThemeAccentChange = (accent: any) => {
+    setCurrentThemeAccent(accent);
+    setActivePreviewJson((prev) => ({ ...prev, themeAccent: accent }));
+  };
 
-  const totalSteps = tutorialSteps.length;
-  const completedCount = Object.values(completedSteps).filter(Boolean).length;
-  const progressPercentage = totalSteps > 0 ? (completedCount / totalSteps) * 100 : 0;
+  const handleAdvanceTourStep = () => {
+    setTourStep((prevStep) => prevStep + 1);
+    if (tourStep === 3) {
+      setIsTourActive(false);
+    }
+  };
+
+  const handleSkipTour = () => {
+    setIsTourActive(false);
+    setTourStep(4); // FIXED: Removed steps.length undefined error block, hardcoded to 4 steps
+  };
+
+  const handleUpdateHeroHeadline = (headline: string) => {
+    setActivePreviewJson((prev) => ({
+      ...prev,
+      heroSection: { ...(prev.heroSection || {}), headline },
+    }));
+    if (isTourActive && tourStep === 1) {
+      setTourStep(2);
+    }
+  };
+
+  const handleUpdateHeroSubheadline = (subheadline: string) => {
+    setActivePreviewJson((prev) => ({
+      ...prev,
+      heroSection: { ...(prev.heroSection || {}), subheadline },
+    }));
+  };
+
+  const handleUpdateWhatsappTargetNumber = (targetNumber: string) => {
+    setActivePreviewJson((prev) => ({
+      ...prev,
+      whatsappFormSection: { ...(prev.whatsappFormSection || {}), targetNumber },
+    }));
+  };
+
+  const handleUpdateWhatsappButtonText = (buttonText: string) => {
+    setActivePreviewJson((prev) => ({
+      ...prev,
+      whatsappFormSection: { ...(prev.whatsappFormSection || {}), buttonText },
+    }));
+  };
+
+  const handleTogglePortfolioSection = (isEnabled: boolean) => {
+    setIsPortfolioSectionEnabled(isEnabled);
+    setActivePreviewJson((prev) => ({
+      ...prev,
+      portfolioSection: isEnabled ? (prev.portfolioSection || []) : undefined,
+    }));
+  };
+
+  const handleAddPortfolioItem = (item: any) => {
+    setActivePreviewJson((prev) => ({
+      ...prev,
+      portfolioSection: [...(prev.portfolioSection || []), item],
+    }));
+  };
+
+  const handleRemovePortfolioItem = (id: string) => {
+    setActivePreviewJson((prev) => ({
+      ...prev,
+      portfolioSection: (prev.portfolioSection || []).filter((item: any) => item.id !== id),
+    }));
+  };
+
+  const handleUpdatePortfolioItemTitle = (id: string, title: string) => {
+    setActivePreviewJson((prev) => ({
+      ...prev,
+      portfolioSection: (prev.portfolioSection || []).map((item: any) => item.id === id ? { ...item, title } : item),
+    }));
+  };
+
+  const handleToggleTestimonialsSection = (isEnabled: boolean) => {
+    setIsTestimonialsSectionEnabled(isEnabled);
+    setActivePreviewJson((prev) => ({
+      ...prev,
+      testimonialsSection: isEnabled ? (prev.testimonialsSection || []) : undefined,
+    }));
+  };
+
+  const handleAddTestimonialItem = (item: any) => {
+    setActivePreviewJson((prev) => ({
+      ...prev,
+      testimonialsSection: [...(prev.testimonialsSection || []), item],
+    }));
+  };
+
+  const handleRemoveTestimonialItem = (id: string) => {
+    setActivePreviewJson((prev) => ({
+      ...prev,
+      testimonialsSection: (prev.testimonialsSection || []).filter((item: any) => item.id !== id),
+    }));
+  };
+
+  const handleUpdateTestimonialItemClientName = (id: string, clientName: string) => {
+    setActivePreviewJson((prev) => ({
+      ...prev,
+      testimonialsSection: (prev.testimonialsSection || []).map((item: any) => item.id === id ? { ...item, clientName } : item),
+    }));
+  };
+
+  const handleDeployBlueprintAction = async (template: WebTemplate) => {
+    if (!customSubdomain || !isSubdomainValidAndAvailable) return;
+    setIsDeploying(true);
+    const { data, error } = await updateMerchantSiteConfiguration({
+      userId: userProfile.id,
+      subdomain: customSubdomain,
+      seoTitle: template.name,
+      seoDescription: template.description,
+      whatsappNumber: activePreviewJson.whatsappFormSection?.targetNumber || "60123456789",
+      layoutData: activePreviewJson,
+    });
+    if (!error && data) {
+      setDeployedSiteUrl(`https://${data.subdomain}.superpage.link`);
+      setShowDeploymentSuccessModal(true);
+      setCustomSubdomain("");
+      setIsSubdomainValidAndAvailable(false);
+      const { data: updated } = await getUserDeployedSites(userProfile.id);
+      setActiveDeployments(updated || []);
+    }
+    setIsDeploying(false);
+  };
+
+  if (isDataLoading) {
+    return <div className="min-h-screen bg-slate-950 text-slate-400 flex justify-center items-center font-mono text-xs">PARSING INTERMEDIARY WORKSPACE ACTIVE SESSION...</div>;
+  }
+
+  const dict = localizationDictionaries[currentLanguage];
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 font-sans antialiased">
+    <div className="min-h-screen bg-slate-100 text-slate-900 dark:bg-slate-950 dark:text-slate-100 font-sans antialiased">
       <nav className="border-b border-slate-900 bg-slate-900/50 backdrop-blur-md sticky top-0 z-50 px-4 sm:px-6 py-4 flex justify-between items-center">
-        <div className="flex items-center gap-3">
-          <div className="h-8 w-8 rounded-lg bg-blue-600 flex items-center justify-center font-bold text-white shadow-md">N</div>
-          <span className="font-bold tracking-tight text-white">Nexus Engine</span>
+        <div className="flex items-center gap-8">
+          <div className="flex items-center gap-3">
+            <div className="h-8 w-8 rounded-lg bg-blue-600 flex items-center justify-center font-bold text-white shadow-md">N</div>
+            <span className="font-bold tracking-tight text-white">{dict.navBrand}</span>
+          </div>
+          <div className="hidden lg:flex items-center gap-4">
+            <Link href="/dashboard/leads" className="text-xs text-slate-400 hover:text-white">Leads Pipeline</Link>
+            <Link href="/dashboard/tutorial" className="text-xs text-blue-400 hover:text-blue-300">Official Tutorial Guide</Link>
+            <Link href="/dashboard/studios" className="text-xs text-blue-400 hover:text-blue-300">Nexus Visual Canvas Studio</Link>
+          </div>
         </div>
-        <Link href="/dashboard" className="text-xs bg-slate-950 hover:bg-slate-800 border border-slate-800 text-slate-300 font-semibold px-4 py-2 rounded-xl transition-colors">
-          Back to Dashboard
-        </Link>
+        <button onClick={() => supabase.auth.signOut().then(() => router.push("/auth"))} className="text-xs bg-slate-950 border border-slate-800 px-4 py-2 rounded-xl text-slate-300">Disconnect</button>
       </nav>
       
-      <main className="max-w-4xl mx-auto px-4 sm:px-6 py-12 space-y-10">
-        <header className="space-y-4 text-center">
-          <h1 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-white">
-            Nexus Engine Official User Tutorial & Design Academy
-          </h1>
-          <p className="text-slate-400 text-sm max-w-2xl mx-auto">
-            Embark on your journey to master the Nexus Engine. Follow these steps to build, customize, and deploy your powerful merchant storefronts.
-          </p>
-          
-          <div className="w-full bg-slate-800 rounded-full h-6 mt-6 relative overflow-hidden flex items-center justify-center">
-            <div
-              className="h-full rounded-full bg-gradient-to-r from-emerald-500 to-blue-600 transition-all duration-700 ease-out absolute left-0 top-0"
-              style={{ width: `${progressPercentage}%` }}
-            ></div>
-            <span className="relative z-10 text-xs font-bold text-white">
-              {completedCount} / {totalSteps} Steps Completed ({progressPercentage.toFixed(0)}%)
-            </span>
-          </div>
-        </header>
-
-        <section className="space-y-6">
-          {tutorialSteps.map((step) => (
-            <div
-              key={step.id}
-              className={`bg-slate-900 border ${completedSteps[step.id] ? "border-emerald-700" : "border-slate-800"} rounded-2xl p-6 shadow-xl space-y-3 transition-all duration-300`}
-            >
-              <div className="flex items-center justify-between">
-                <h3 className={`text-lg font-bold ${completedSteps[step.id] ? "text-emerald-300" : "text-white"}`}>
-                  {step.title}
-                </h3>
-                <input
-                  type="checkbox"
-                  checked={completedSteps[step.id] || false}
-                  onChange={() => onToggleStepCompletion(step.id)}
-                  className="h-5 w-6 rounded border-slate-600 text-emerald-600 focus:ring-emerald-500 cursor-pointer"
-                />
-              </div>
-              <p className={`text-sm text-slate-400 ${completedSteps[step.id] ? "line-through text-slate-500" : ""}`}>
-                {step.description}
-              </p>
-            </div>
-          ))}
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 py-6 sm:py-10 space-y-10">
+        <section className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <StatCard title="Total Active Sites" value={totalActiveSitesCount !== null ? String(totalActiveSitesCount) : "0"} />
+          <StatCard title="Cloudflare R2 Storage" value="1.2 GB / 10 GB" />
+          <StatCard title="AI Requests Used Today" value="0 / 5" />
         </section>
+
+        <CommandHub
+          userProfile={userProfile}
+          aiRequestsUsedToday={0}
+          activeDeployments={activeDeployments}
+          customSubdomain={customSubdomain}
+          isSubdomainValidAndAvailable={isSubdomainValidAndAvailable}
+          activePreviewJson={activePreviewJson}
+          currentStorageUsedBytes={12582912}
+        />
+        
+        <ThemePaletteSwapper currentThemeAccent={currentThemeAccent} onThemeAccentChange={handleThemeAccentChange} />
+
+        <section className="space-y-4">
+          <h4 className="text-sm font-semibold text-slate-300">Live Visual Blueprint Parser</h4>
+          <DynamicRenderer layoutData={activePreviewJson} onNewOrder={(order) => setCustomerOrders((prev) => [order, ...prev])} />
+        </section>
+
+        <ComponentLibrary activePreviewJson={activePreviewJson} setActivePreviewJson={setActivePreviewJson} />
+        
+        <section className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* FIXED: Passed accurate and valid explicit props to ContentConfigurator */}
+          <ContentConfigurator 
+            activePreviewJson={activePreviewJson} 
+            onUpdateHeroHeadline={handleUpdateHeroHeadline} 
+            onUpdateHeroSubheadline={handleUpdateHeroSubheadline} 
+            onUpdateWhatsappTargetNumber={handleUpdateWhatsappTargetNumber} 
+            onUpdateWhatsappButtonText={handleUpdateWhatsappButtonText} 
+          />
+          <BlueprintNavigator 
+            activePreviewJson={activePreviewJson} 
+            isPortfolioSectionEnabled={isPortfolioSectionEnabled} 
+            onTogglePortfolioSection={handleTogglePortfolioSection} 
+            onAddPortfolioItem={handleAddPortfolioItem} 
+            onRemovePortfolioItem={handleRemovePortfolioItem} 
+            onUpdatePortfolioItemTitle={handleUpdatePortfolioItemTitle} 
+            isTestimonialsSectionEnabled={isTestimonialsSectionEnabled} 
+            onToggleTestimonialsSection={handleToggleTestimonialsSection} 
+            onAddTestimonialItem={handleAddTestimonialItem} 
+            onRemoveTestimonialItem={handleRemoveTestimonialItem} 
+            onUpdateTestimonialItemClientName={handleUpdateTestimonialItemClientName} 
+          />
+        </section>
+
+        <section className="bg-slate-900 border border-slate-800 p-6 rounded-2xl">
+          <SubdomainChecker onSubdomainChange={(sub, valid) => {
+            setCustomSubdomain(sub);
+            setIsSubdomainValidAndAvailable(valid);
+          }} />
+        </section>
+
+        <TemplateGrid 
+          templates={PREBUILT_TEMPLATES} 
+          selectedTemplateFilter={selectedTemplateFilter} 
+          setSelectedTemplateFilter={setSelectedTemplateFilter} 
+          activeTemplateId={activeTemplateId} 
+          onTemplateSelect={handleTemplateSelect} 
+          handleDeployBlueprintAction={handleDeployBlueprintAction} 
+          isDeploying={isDeploying} 
+          isSubdomainValidAndAvailable={isSubdomainValidAndAvailable} 
+        />
+        <AnalyticsSimulator layoutData={activePreviewJson} />
+        <DeploymentHistory activeDeployments={activeDeployments} />
       </main>
+
+      {showDeploymentSuccessModal && deployedSiteUrl && (
+        <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-slate-900 border border-slate-700 rounded-2xl p-8 shadow-2xl max-w-sm w-full text-center space-y-6">
+            <h3 className="text-xl font-bold text-white">Deployment Successful!</h3>
+            <a href={deployedSiteUrl} target="_blank" rel="noopener noreferrer" className="block w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 rounded-xl text-sm">Visit Site</a>
+            <button onClick={() => setShowDeploymentSuccessModal(false)} className="w-full text-slate-400 text-xs">Close</button>
+          </div>
+        </div>
+      )}
+
+      {isTourActive && tourStep < 4 && (
+        <ContextualTourGuide tourStep={tourStep} onAdvanceStep={handleAdvanceTourStep} onSkipTour={handleSkipTour} />
+      )}
     </div>
   );
 }
