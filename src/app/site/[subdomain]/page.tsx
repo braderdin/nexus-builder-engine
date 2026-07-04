@@ -7,7 +7,7 @@ import { useParams } from "next/navigation";
 
 // Start: Infrastructure and Sub-Component Engine Imports
 import DynamicRenderer from "@/components/templates/DynamicRenderer";
-import { getMerchantWebsiteBySubdomain } from "@/lib/supabase/sites"; // New import
+import { getMerchantWebsiteBySubdomain } from "@/lib/supabase/sites";
 // End: Infrastructure and Sub-Component Engine Imports
 
 // Start: Public Multi-Tenant Viewer Component
@@ -25,34 +25,26 @@ export default function PublicMerchantSitePage() {
   // Start: Database Query Lifecycle Hook Validation
   useEffect(() => {
     if (!subdomain) return;
-
     const fetchPublishedSitePayload = async () => {
       try {
-        // Start: Fetch site data and relational profile data using the new utility function
         const { data: siteQueryResult, error: fetchError } = await getMerchantWebsiteBySubdomain(subdomain);
-
         if (fetchError) throw fetchError;
         if (!siteQueryResult) throw new Error("No site data found for this subdomain.");
-        
+         
         setSiteData(siteQueryResult);
-        
-        // Dynamic Single Page Browser Title Overwrite
+         
         if (siteQueryResult.seo_title) {
           document.title = siteQueryResult.seo_title;
         }
-
-        // Set premium status directly from the fetched data
         setIsPremium(siteQueryResult.is_premium);
-
       } catch (fetchError: any) {
         console.error("Error fetching site data:", fetchError.message);
         setErrorState(fetchError.message || "Target site configuration deployment missing or data error.");
-        setIsPremium(false); // Ensure ads are shown if there's any fetch error
-      } finally {
+        setIsPremium(false);
+      } finaly {
         setIsFetching(false);
       }
     };
-
     fetchPublishedSitePayload();
   }, [subdomain]);
   // End: Database Query Lifecycle Hook Validation
@@ -91,7 +83,8 @@ export default function PublicMerchantSitePage() {
         )}
         {/* End: Google Ad Manager Placeholder Slot (Top) */}
 
-        <DynamicRenderer layoutData={siteData.layout_data} />
+        {/* FIXED: Added onNewOrder dummy callback loop to resolve missing prop compilation error */}
+        <DynamicRenderer layoutData={siteData.layout_data} onNewOrder={() => {}} />
 
         {/* Start: Google Ad Manager Placeholder Slot (Bottom) */}
         {!isPremium && (
@@ -107,4 +100,3 @@ export default function PublicMerchantSitePage() {
     </div>
   );
 }
-// End: Public Multi-Tenant Viewer Component
