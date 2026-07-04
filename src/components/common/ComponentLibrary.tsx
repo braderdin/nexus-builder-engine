@@ -153,11 +153,11 @@ const ComponentLibrary: React.FC<ComponentLibraryProps> = ({ activePreviewJson, 
             <div key={layout.id} className="space-y-4 border-b border-slate-800 last:border-b-0 pb-6">
               <h5 className="text-lg font-bold text-white">{layout.name}</h5>
               <p className="text-slate-400 text-sm">{layout.description}</p>
-              {layout.configOptionsRender && layout.configOptionsRender({ numColumns: numColumnsForLayout, setNumColumns: setMarketplaceItems || setNumColumnsForLayout })}
+              {/* FIXED: Removed missing reference to setMarketplaceItems to prevent browser crash execution */}
+              {layout.configOptionsRender && layout.configOptionsRender({ numColumns: numColumnsForLayout, setNumColumns: numColumnsForLayout })}
               <div className="bg-slate-950 border border-slate-700 rounded-lg p-4 flex justify-center items-center min-h-[100px]">
                 {layout.preview}
               </div>
-              {/* Start: Surgical Bug Fix Wrapping State Setter Injection Chain */}
               <button
                 onClick={() => {
                   setActivePreviewJson((prev) => layout.injectLogic(prev, { numColumns: numColumnsForLayout }));
@@ -167,7 +167,6 @@ const ComponentLibrary: React.FC<ComponentLibraryProps> = ({ activePreviewJson, 
               >
                 Inject Layout to Canvas
               </button>
-              {/* End: Surgical Bug Fix Wrapping State Setter Injection Chain */}
             </div>
           ))}
         </div>
