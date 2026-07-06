@@ -73,10 +73,10 @@ export const getMerchantWebsiteBySubdomain = async (
     return { data: null, error };
   }
 
-  // Flatten the profile data for easier access
+  // Flatten the profile data for easier access - profiles is an array from the join
   const siteDataWithPremium = {
     ...data,
-    is_premium: data.profiles?.is_premium || false,
+    is_premium: data.profiles?.[0]?.is_premium || false,
   };
 
   return { data: siteDataWithPremium, error: null };

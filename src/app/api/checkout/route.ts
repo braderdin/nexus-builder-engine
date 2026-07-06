@@ -1,3 +1,5 @@
+export const dynamic = "force-dynamic";
+
 import { NextRequest, NextResponse } from "next/server";
 import Stripe from "stripe";
 
@@ -54,4 +56,4 @@ export async function POST(request: NextRequest) {
       { status: 500 }
     );
   }
-}
+}```

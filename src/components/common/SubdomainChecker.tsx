@@ -40,7 +40,7 @@ export default function SubdomainChecker({ onSubdomainChange }: SubdomainChecker
     const validationResult = subdomainValidationSchema.safeParse({ subdomain: subdomainInput });
     if (!validationResult.success) {
       setIsValidFormat(false);
-      setErrorMessage(validationResult.error.errors[0].message);
+      setErrorMessage(validationResult.error.issues[0].message);
       onSubdomainChange(subdomainInput, false);
       return;
     } else {
