@@ -2,13 +2,20 @@ import { NextRequest, NextResponse } from "next/server";
 import Stripe from "stripe";
 import { supabase } from "@/lib/supabase/client";
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY as string, {
-  apiVersion: "2026-06-24.dahlia",
-});
-
 export async function POST(request: NextRequest) {
-  const sig = request.headers.get("stripe-signature");
+  const stripeSecretKey = process.env.STRIPE_SECRET_KEY;
   const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
+  
+  if (!stripeSecretKey) {
+    console.error("Missing Stripe secret key in environment.");
+    return new NextResponse("Missing Stripe secret key.", { status: 500 });
+  }
+
+  const stripe = new Stripe(stripeSecretKey, {
+    apiVersion: "2026-06-24.dahlia",
+  });
+
+  const sig = request.headers.get("stripe-signature");
 
   let event: Stripe.Event;
 

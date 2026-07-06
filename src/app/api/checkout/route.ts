@@ -3,12 +3,6 @@ export const dynamic = "force-dynamic";
 import { NextRequest, NextResponse } from "next/server";
 import Stripe from "stripe";
 
-// Start: Stripe API Initialization
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || "", {
-  apiVersion: "2026-06-24.dahlia",
-});
-// End: Stripe API Initialization
-
 interface CheckoutPayload {
   userId: string;
   userEmail: string;
@@ -24,6 +18,19 @@ export async function POST(request: NextRequest) {
         { status: 400 }
       );
     }
+
+    const stripeSecretKey = process.env.STRIPE_SECRET_KEY;
+    if (!stripeSecretKey) {
+      console.error("Missing Stripe secret key in environment.");
+      return NextResponse.json(
+        { error: "Internal Server Error", message: "Missing Stripe secret key." },
+        { status: 500 }
+      );
+    }
+
+    const stripe = new Stripe(stripeSecretKey, {
+      apiVersion: "2026-06-24.dahlia",
+    });
 
     const origin = request.nextUrl.origin;
     const successUrl = `${origin}/dashboard/billing?session_id={CHECKOUT_SESSION_ID}&status=success`;
@@ -49,11 +56,12 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ sessionId: session.id, url: session.url }, { status: 200 });
 
-  } catch (error: any) {
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Failed to create Stripe Checkout Session.";
     console.error("Stripe Checkout Session Creation Fault:", error);
     return NextResponse.json(
-      { error: "Internal Server Error", message: error.message || "Failed to create Stripe Checkout Session." },
+      { error: "Internal Server Error", message },
       { status: 500 }
     );
   }
-}```
+}
